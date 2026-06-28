@@ -269,6 +269,74 @@ const CATEGORIES = [
         key: ["no", "verify", "pressure", "walk", "away", "pause", "cash"]
       }
     ]
+  },
+  {
+    id: "grownup",
+    name: "Grown-Up Mode",
+    blurb: "The hard stuff nobody actually taught you.",
+    icon: "doc",
+    questions: [
+      {
+        q: "You're writing a paper check for $1,042.50. How do you write the cents, and how do you stop someone from altering it?",
+        accept: ["fraction", "100", "over 100", "and", "line", "50/100"],
+        answer: "Write the dollars in words, then the cents as a fraction over 100: 'One thousand forty-two and 50/100'. For whole dollars use 'and 00/100' (or 'and no/100'). Draw a line through any empty space after the words so no one can add to it, and make the numeric box ($1,042.50) match.",
+        key: ["fraction", "100", "and", "words", "line", "empty", "00/100", "match"]
+      },
+      {
+        q: "Explain the difference between a health plan's premium, deductible, copay, and out-of-pocket maximum.",
+        accept: ["premium", "deductible", "copay", "out of pocket", "out-of-pocket"],
+        answer: "Premium = what you pay every month just to have the plan. Deductible = what you pay yourself before insurance starts covering things. Copay = a fixed fee per visit/prescription. Out-of-pocket maximum = the hard cap; once you hit it in a year, insurance pays 100% of covered costs.",
+        key: ["premium", "monthly", "deductible", "before", "copay", "fixed", "out", "pocket", "maximum", "cap", "100"]
+      },
+      {
+        q: "What's the real difference between an HMO and a PPO health plan?",
+        accept: ["network", "referral", "ppo", "hmo", "out of network", "primary"],
+        answer: "HMO: cheaper, but you must stay in-network and usually need a primary-care doctor's referral to see specialists. PPO: more expensive, but you can see specialists without referrals and can go out-of-network (you just pay more). HMO trades flexibility for cost.",
+        key: ["hmo", "ppo", "network", "referral", "specialist", "primary", "cheaper", "flexible"]
+      },
+      {
+        q: "You're buying a $400,000 house. What's the 'standard' down payment, what does it come to in dollars, and what happens if you put down less?",
+        accept: ["20", "twenty", "80000", "80,000", "pmi", "percent"],
+        answer: "The standard is 20% down = $80,000, which lets you avoid PMI. You can put down less (FHA loans go as low as 3.5%, ~$14,000), but under 20% you'll pay PMI (private mortgage insurance) every month until you reach ~20% equity, and you'll borrow — and pay interest on — more.",
+        key: ["20", "twenty", "percent", "80000", "pmi", "mortgage", "insurance", "equity", "3.5", "fha"]
+      },
+      {
+        q: "Your job offers a '401(k) with a 4% match.' What does that actually mean, and what's the rookie mistake?",
+        accept: ["match", "free money", "contribute", "4", "vesting", "percent"],
+        answer: "If you contribute, your employer adds money too — up to 4% of your salary. That's free money and an instant 100% return. The rookie mistake is not contributing at least enough to get the full match — you're leaving guaranteed money on the table. Watch the vesting schedule (how long until the match is fully yours).",
+        key: ["match", "employer", "free", "contribute", "4", "salary", "vesting", "leave", "table"]
+      },
+      {
+        q: "A raise bumps you into a higher tax bracket. Does that mean you can actually take home LESS money? Explain.",
+        accept: ["no", "marginal", "only", "above", "myth"],
+        answer: "No — that's a myth. Brackets are marginal: only the income ABOVE each threshold is taxed at the higher rate, not your whole salary. A raise always leaves you with more take-home pay. (The rare exception is losing a specific income-tested benefit — a 'benefits cliff' — not the tax itself.)",
+        key: ["no", "marginal", "above", "threshold", "only", "more", "myth", "whole"]
+      },
+      {
+        q: "What's the difference between APR and APY, and which one do you want to be lower vs higher?",
+        accept: ["apr", "apy", "compound", "interest", "borrow", "earn"],
+        answer: "APR is a yearly interest rate without compounding; APY includes the effect of compounding. When you're BORROWING (loans, cards) you want a low APR. When you're SAVING/INVESTING you want a high APY. For the same nominal rate, APY is always ≥ APR because of compounding.",
+        key: ["apr", "apy", "compound", "borrow", "low", "save", "high", "yearly"]
+      },
+      {
+        q: "Term life vs whole life insurance — what's the difference, and which does most financial advice favor for a young family?",
+        accept: ["term", "whole", "cash value", "cheaper", "permanent"],
+        answer: "Term life covers you for a set period (e.g., 20 years), is cheap, and pays out only if you die during the term. Whole life is permanent and builds 'cash value' but costs many times more. Most advice: buy cheap term and invest the difference — 'buy term, invest the rest' — for a young family on a budget.",
+        key: ["term", "period", "cheap", "whole", "permanent", "cash", "value", "invest", "difference"]
+      },
+      {
+        q: "What is escrow, and where will a normal person run into it twice when buying a home?",
+        accept: ["escrow", "third party", "earnest", "taxes", "insurance", "holds"],
+        answer: "Escrow is money held by a neutral third party until conditions are met. You hit it twice: (1) at purchase, your earnest-money deposit sits in escrow until closing; (2) in your monthly mortgage payment, a portion goes into an escrow account the lender uses to pay your property taxes and homeowners insurance for you.",
+        key: ["escrow", "third", "party", "neutral", "earnest", "closing", "taxes", "insurance", "monthly", "lender"]
+      },
+      {
+        q: "You owe $6,000 across three credit cards. What's the smartest order to pay them off and why?",
+        accept: ["highest interest", "avalanche", "snowball", "smallest", "apr"],
+        answer: "Mathematically best is the 'avalanche': pay minimums on all, then throw extra at the highest-APR card first — it costs you the least interest overall. The 'snowball' (smallest balance first) is worse on paper but gives quick wins for motivation. Either way: stop adding new charges and always pay more than the minimum.",
+        key: ["avalanche", "highest", "interest", "apr", "snowball", "smallest", "minimum", "extra"]
+      }
+    ]
   }
 ];
 
