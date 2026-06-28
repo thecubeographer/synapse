@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#0c0e16" />
+  <title>SYNAPSE — think for yourself</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <canvas id="neurons"></canvas>
+
+  <main id="app">
+
+    <!-- HOME -->
+    <section id="screen-home" class="screen active">
+      <div class="home-inner">
+        <div class="logo-mark">
+          <svg viewBox="0 0 120 120" class="logo-svg">
+            <circle cx="60" cy="60" r="6"/>
+            <circle cx="24" cy="34" r="4"/><circle cx="96" cy="30" r="4"/>
+            <circle cx="30" cy="92" r="4"/><circle cx="92" cy="88" r="4"/>
+            <circle cx="60" cy="16" r="3.5"/><circle cx="16" cy="64" r="3.5"/><circle cx="104" cy="64" r="3.5"/>
+            <path d="M60 60 24 34M60 60 96 30M60 60 30 92M60 60 92 88M60 60 60 16M60 60 16 64M60 60 104 64"/>
+          </svg>
+        </div>
+        <h1 class="title">SYNAPSE</h1>
+        <p class="tag">A trivia game for the unplugged.<br/>Real questions. No phones. Use your <b>actual</b> brain.</p>
+        <div class="home-btns">
+          <button class="btn primary big" id="begin-btn">Start a game</button>
+          <button class="btn ghost" id="how-btn">How it works</button>
+        </div>
+        <p class="anti">Powered by neurons, not the cloud.</p>
+      </div>
+    </section>
+
+    <!-- SETUP -->
+    <section id="screen-setup" class="screen">
+      <div class="topbar">
+        <button class="icon-btn" id="back-home">←</button>
+        <span class="topbar-title">Set up your round</span>
+        <span></span>
+      </div>
+
+      <div class="setup-scroll">
+        <h2 class="sec">Players</h2>
+        <div class="add-row">
+          <input id="player-input" type="text" placeholder="Add a name…" maxlength="14" autocomplete="off" />
+          <button class="btn small" id="add-player-btn">Add</button>
+        </div>
+        <div id="player-list" class="player-list"></div>
+
+        <h2 class="sec">Game mode</h2>
+        <div class="mode-grid">
+          <button class="mode-card sel" data-mode="shout">
+            <div class="mode-ic">📣</div>
+            <div class="mode-name">Shout It</div>
+            <div class="mode-desc">First to yell the right answer scores. Mic listens; tap who said it.</div>
+          </button>
+          <button class="mode-card" data-mode="explain">
+            <div class="mode-ic">⏱️</div>
+            <div class="mode-name">Explain It</div>
+            <div class="mode-desc">Each player gets a timer to explain. The judge picks the most accurate.</div>
+          </button>
+        </div>
+        <div class="row" id="duration-row" style="display:none">
+          <span class="dur-label">Time per player</span>
+          <button class="seg" data-sec="10">10s</button>
+          <button class="seg sel" data-sec="15">15s</button>
+          <button class="seg" data-sec="20">20s</button>
+        </div>
+
+        <h2 class="sec">Category</h2>
+        <div id="cat-list" class="cat-list"></div>
+
+        <p id="mic-note" class="mic-note" style="display:none">
+          Heads up: this browser doesn't support the mic. You can still play — use the manual buttons / type answers.
+        </p>
+      </div>
+
+      <div class="setup-foot">
+        <button class="btn primary big" id="start-btn" disabled>Let's go →</button>
+      </div>
+    </section>
+
+    <!-- PLAY -->
+    <section id="screen-play" class="screen">
+      <div class="topbar">
+        <button class="icon-btn" id="quit-btn">✕</button>
+        <span class="topbar-title" id="q-cat">—</span>
+        <span class="q-progress" id="q-progress">Q1</span>
+      </div>
+
+      <div id="score-strip" class="score-strip"></div>
+
+      <div class="q-card">
+        <div class="q-text" id="q-text">…</div>
+      </div>
+
+      <!-- SHOUT -->
+      <div id="play-shout" class="play-pane">
+        <div class="shout-mic-wrap">
+          <button id="shout-mic" class="mic-btn" aria-label="Listen">
+            <svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>
+            <span class="mic-ring"></span>
+          </button>
+        </div>
+        <div id="shout-status" class="shout-status">Tap the mic, then shout your answer</div>
+        <div id="shout-live" class="shout-live"></div>
+        <div id="shout-correct" class="shout-correct">⚡ Correct!</div>
+        <div id="shout-award" class="award-grid"></div>
+        <div class="row center wrap">
+          <button class="btn ghost" id="shout-claim">Someone got it</button>
+          <button class="btn ghost danger" id="shout-nobody">Nobody knew it</button>
+        </div>
+      </div>
+
+      <!-- EXPLAIN -->
+      <div id="play-explain" class="play-pane" style="display:none">
+        <div id="explain-stage" class="explain-stage"></div>
+        <div id="explain-results" class="explain-results"></div>
+      </div>
+
+      <!-- REVEAL (shout) -->
+      <div id="reveal-box" class="reveal-box"></div>
+    </section>
+
+    <!-- END -->
+    <section id="screen-end" class="screen">
+      <div class="end-inner">
+        <h1 class="end-title" id="end-title">—</h1>
+        <p class="end-sub" id="end-sub"></p>
+        <div id="end-podium" class="podium"></div>
+        <div class="home-btns">
+          <button class="btn primary big" id="again-btn">Play again</button>
+          <button class="btn ghost" id="end-home">Home</button>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- HOW MODAL -->
+  <div id="how-modal" class="modal">
+    <div class="modal-card">
+      <h2>How SYNAPSE works</h2>
+      <ul>
+        <li><b>Add your friends</b> and pick a category of real-world problems — changing oil, surviving without a phone, spotting a scam.</li>
+        <li><b>Shout It:</b> a question appears, the mic listens, first to yell the right answer wins the point.</li>
+        <li><b>Explain It:</b> everyone gets a timer to explain their answer out loud. The judge ranks who was most accurate.</li>
+        <li><b>Get it wrong?</b> Expect a roast — then the real answer, so you actually learn it.</li>
+        <li>The whole point: make decisions <b>without</b> reaching for AI. Keep the brain firing.</li>
+      </ul>
+      <button class="btn primary" id="how-close">Got it</button>
+    </div>
+  </div>
+
+  <script src="questions.js"></script>
+  <script src="neurons.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
