@@ -13,6 +13,11 @@
 
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 html, body { margin: 0; height: 100%; }
+html {
+  /* stop Android Chrome from auto-inflating text (which overflows & clips words) */
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
 body {
   background: var(--paper);
   color: var(--ink);
@@ -20,7 +25,10 @@ body {
   font-weight: 400;
   overflow: hidden;
   -webkit-font-smoothing: antialiased;
+  overflow-wrap: break-word;
+  word-break: normal;
 }
+.step-q, .q-text, .reveal-q, .answer-big, .turn-name { overflow-wrap: break-word; hyphens: auto; }
 
 #app { position: relative; height: 100dvh; max-width: 560px; margin: 0 auto; }
 
