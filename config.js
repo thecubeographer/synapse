@@ -7,14 +7,10 @@
  */
 const CONFIG = {
   ai: {
-    enabled: false,            // <-- set true when the endpoint below exists
-    endpoint: "/api/judge",    // your server route (proxies to Anthropic)
-    model: "claude-opus-4-8",
-    timeoutMs: 12000,
-
-    // Also let Claude verify Shout-It answers instead of keyword matching.
-    verifyShout: false,
-    shoutEndpoint: "/api/check"
+    // FREE setup in ~5 min: see SETUP_AI.md (free Gemini key + free Cloudflare Worker).
+    enabled: false,                                  // <-- flip to true after you deploy the Worker
+    endpoint: "https://synapse-judge.YOURNAME.workers.dev",  // <-- paste your Worker URL here
+    timeoutMs: 12000
   }
 };
 
