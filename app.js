@@ -1,10 +1,10 @@
 /* SYNAPSE — game logic
- * Shout It  : question shows, mic listens, first correct shout scores.
- * Explain It: each player gets a timer to explain; the judge ranks accuracy.
+ * Flow: Players → Mode → Category → Play (landscape) → End.
+ * Shout It  : 2+ players. Question shows, mic listens, first correct shout earns a tally.
+ * Explain It: 1–3 players. Each gets a timer to explain; the judge ranks accuracy.
  *
- * The judge runs locally by default (keyword/overlap heuristic). When CONFIG.ai
- * is enabled it asks your Claude proxy instead and falls back on any error — so
- * the game always works. See config.js / SERVER_NOTES.md.
+ * Judge runs locally by default; flip CONFIG.ai.enabled to use a Claude proxy
+ * (falls back to local on any error). See config.js / SERVER_NOTES.md.
  */
 
 const $ = (sel) => document.querySelector(sel);
@@ -12,14 +12,28 @@ const $$ = (sel) => Array.from(document.querySelectorAll(sel));
 
 const state = {
   players: [],
-  mode: "shout",
-  catId: null,
+  mode: null,
   duration: 15,
+  catId: null,
   queue: [],
   qIndex: 0,
   current: null,
   turn: 0,
   transcripts: {},
+};
+
+/* soft color theme per category — background + accent (used on the play screen) */
+const CATEGORY_THEME = {
+  survive:   { bg: "#dbe8d6", accent: "#3f6b4a" },  // green
+  house:     { bg: "#e9e1cf", accent: "#876a37" },  // tan
+  money:     { bg: "#efe3b0", accent: "#897219" },  // gold
+  body:      { bg: "#f0d6d1", accent: "#a4453a" },  // red
+  kitchen:   { bg: "#f1ddc5", accent: "#b3652a" },  // orange
+  sense:     { bg: "#f0e9b6", accent: "#8c8020" },  // yellow
+  grownup:   { bg: "#dee1ea", accent: "#454f6d" },  // slate
+  geo:       { bg: "#d3e2ec", accent: "#2f6080" },  // blue
+  civics:    { bg: "#dcdde9", accent: "#4a4f7a" },  // indigo-grey
+  generaled: { bg: "#e4dcee", accent: "#5e468a" },  // purple
 };
 
 /* ---------------- speech ---------------- */
@@ -46,21 +60,17 @@ function startRecog(onResult, opts = {}) {
     }
   };
   recog.onerror = () => {};
-  recog.onend = () => {
-    if (opts.keepAlive && opts.keepAlive()) { try { recog.start(); } catch (_) {} }
-  };
+  recog.onend = () => { if (opts.keepAlive && opts.keepAlive()) { try { recog.start(); } catch (_) {} } };
   try { recog.start(); return true; } catch (_) { return false; }
 }
 function stopRecog() { if (recog) { try { recog.onend = null; recog.stop(); } catch (_) {} } }
 
 /* ---------------- judging ---------------- */
 function normalize(s) { return (s || "").toLowerCase().replace(/[^a-z0-9\s]/g, " ").replace(/\s+/g, " ").trim(); }
-
 function matchesAccept(text, accept) {
   const t = " " + normalize(text) + " ";
   return accept.some(kw => t.includes(normalize(kw)));
 }
-
 function scoreExplanation(text, q) {
   const t = normalize(text);
   if (!t) return { score: 0, hits: [] };
@@ -70,8 +80,6 @@ function scoreExplanation(text, q) {
   const effort = Math.min(words.length / 25, 1) * 0.2;
   return { score: Math.min(1, coverage + effort), hits };
 }
-
-// Local judge → uniform result shape, same as the AI judge returns.
 function localJudge(transcripts, q) {
   const ranked = state.players.map(p => {
     const { score, hits } = scoreExplanation(transcripts[p.name] || "", q);
@@ -80,27 +88,15 @@ function localJudge(transcripts, q) {
   }).sort((a, b) => b.score - a.score);
   const best = ranked[0];
   const winner = best && best.score >= 0.18 ? best.name : null;
-  return {
-    ranked, winner,
-    verdict: winner ? `${winner} nailed it best` : "Nobody really got there",
-    roast: winner ? pick(PRAISE) : pick(ROASTS)
-  };
+  return { ranked, winner, verdict: winner ? `${winner} nailed it best` : "Nobody really got there", roast: winner ? pick(PRAISE) : pick(ROASTS) };
 }
-
-// AI judge — POSTs to your proxy. Throws on any failure so we can fall back.
 async function aiJudge(transcripts, q) {
   const ctrl = new AbortController();
   const t = setTimeout(() => ctrl.abort(), CONFIG.ai.timeoutMs);
   try {
     const res = await fetch(CONFIG.ai.endpoint, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      signal: ctrl.signal,
-      body: JSON.stringify({
-        question: q.q,
-        idealAnswer: q.answer,
-        answers: state.players.map(p => ({ name: p.name, text: transcripts[p.name] || "" }))
-      })
+      method: "POST", headers: { "Content-Type": "application/json" }, signal: ctrl.signal,
+      body: JSON.stringify({ question: q.q, idealAnswer: q.answer, answers: state.players.map(p => ({ name: p.name, text: transcripts[p.name] || "" })) })
     });
     if (!res.ok) throw new Error("judge " + res.status);
     const data = await res.json();
@@ -108,7 +104,6 @@ async function aiJudge(transcripts, q) {
     return data;
   } finally { clearTimeout(t); }
 }
-
 async function judge(transcripts, q) {
   if (CONFIG?.ai?.enabled) {
     try { return await aiJudge(transcripts, q); }
@@ -117,24 +112,24 @@ async function judge(transcripts, q) {
   return localJudge(transcripts, q);
 }
 
-// Optional AI verification of a shouted answer (used only if CONFIG.ai.verifyShout).
-async function aiCheckShout(said, q) {
-  const res = await fetch(CONFIG.ai.shoutEndpoint, {
-    method: "POST", headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ question: q.q, idealAnswer: q.answer, said })
-  });
-  if (!res.ok) throw new Error("check " + res.status);
-  return (await res.json()).correct === true;
-}
-
-/* ---------------- screens ---------------- */
+/* ---------------- nav ---------------- */
 function show(id) {
   $$(".screen").forEach(s => s.classList.remove("active"));
   $("#" + id).classList.add("active");
   window.scrollTo(0, 0);
 }
 
-/* ---------------- setup ---------------- */
+/* ---------------- landscape ---------------- */
+async function lockLandscape() {
+  try { if (document.documentElement.requestFullscreen) await document.documentElement.requestFullscreen(); } catch (_) {}
+  try { if (screen.orientation && screen.orientation.lock) await screen.orientation.lock("landscape"); } catch (_) {}
+}
+function unlockLandscape() {
+  try { if (screen.orientation && screen.orientation.unlock) screen.orientation.unlock(); } catch (_) {}
+  try { if (document.fullscreenElement && document.exitFullscreen) document.exitFullscreen(); } catch (_) {}
+}
+
+/* ---------------- step 1: players ---------------- */
 function renderPlayers() {
   const wrap = $("#player-list");
   wrap.innerHTML = "";
@@ -145,9 +140,8 @@ function renderPlayers() {
     wrap.appendChild(chip);
   });
   $$("#player-list .x").forEach(b => b.onclick = () => { state.players.splice(+b.dataset.i, 1); renderPlayers(); });
-  $("#start-btn").disabled = state.players.length < 1 || !state.catId;
+  $("#players-next").disabled = state.players.length < 1;
 }
-
 function addPlayer(name) {
   name = (name || "").trim();
   if (!name || state.players.length >= 8) return;
@@ -155,27 +149,50 @@ function addPlayer(name) {
   renderPlayers();
 }
 
+/* ---------------- step 2: mode ---------------- */
+function renderMode() {
+  const n = state.players.length;
+  const explainOK = n >= 1 && n <= 3;
+  const shoutOK = n >= 2;
+  const avail = { shout: shoutOK, explain: explainOK };
+
+  $$(".mode-big").forEach(c => {
+    const ok = avail[c.dataset.mode];
+    c.classList.toggle("disabled", !ok);
+  });
+  // clear invalid selection
+  if (state.mode && !avail[state.mode]) state.mode = null;
+  // auto-pick if exactly one is valid
+  if (!state.mode) {
+    if (shoutOK && !explainOK) state.mode = "shout";
+    else if (explainOK && !shoutOK) state.mode = "explain";
+  }
+  applyMode();
+}
+function selectMode(m) {
+  state.mode = m;
+  applyMode();
+}
+function applyMode() {
+  $$(".mode-big").forEach(c => c.classList.toggle("sel", c.dataset.mode === state.mode));
+  $("#time-block").style.display = state.mode === "explain" ? "block" : "none";
+  $("#mode-next").disabled = !state.mode;
+}
+
+/* ---------------- step 3: category ---------------- */
 function renderCategories() {
   const wrap = $("#cat-list");
   wrap.innerHTML = "";
   CATEGORIES.forEach(c => {
+    const t = CATEGORY_THEME[c.id] || {};
     const card = document.createElement("button");
     card.className = "cat-card";
     card.dataset.id = c.id;
+    card.style.background = t.bg || "var(--paper)";
     card.innerHTML = `<div class="cat-icon">${ICONS[c.icon] || ICONS.bulb}</div><div class="cat-name">${c.name}</div><div class="cat-blurb">${c.blurb}</div>`;
-    card.onclick = () => {
-      state.catId = c.id;
-      $$(".cat-card").forEach(x => x.classList.toggle("sel", x.dataset.id === c.id));
-      renderPlayers();
-    };
+    card.onclick = () => startGame(c.id);
     wrap.appendChild(card);
   });
-}
-
-function setMode(m) {
-  state.mode = m;
-  $$(".mode-card").forEach(x => x.classList.toggle("sel", x.dataset.mode === m));
-  $("#duration-row").style.display = m === "explain" ? "flex" : "none";
 }
 
 /* ---------------- gameplay ---------------- */
@@ -185,12 +202,20 @@ function shuffle(arr) {
   return a;
 }
 
-function startGame() {
+function startGame(catId) {
+  state.catId = catId;
   state.players.forEach(p => p.score = 0);
-  const cat = CATEGORIES.find(c => c.id === state.catId);
+  const cat = CATEGORIES.find(c => c.id === catId);
   state.queue = shuffle(cat.questions.map((_, i) => i));
   state.qIndex = 0;
+
+  const t = CATEGORY_THEME[catId] || {};
+  const play = $("#screen-play");
+  play.style.setProperty("--qbg", t.bg || "var(--paper)");
+  play.style.setProperty("--qaccent", t.accent || "var(--accent)");
+
   $("#score-strip").classList.remove("show");
+  lockLandscape();            // user gesture (card tap) → allowed
   show("screen-play");
   nextQuestion();
 }
@@ -202,7 +227,6 @@ function nextQuestion() {
   state.current = cat.questions[state.queue[state.qIndex]];
   state.transcripts = {};
   state.turn = 0;
-  SYNAPSE_NEURONS.setIntensity(1);
 
   $("#q-progress").textContent = `Q${state.qIndex + 1}/${state.queue.length}`;
   $("#q-cat").textContent = cat.name;
@@ -214,8 +238,7 @@ function nextQuestion() {
 }
 
 function renderScoreStrip() {
-  $("#score-strip").innerHTML = state.players
-    .map(p => `<div class="sc"><span class="sc-n">${p.name}</span><span class="sc-v">${p.score}</span></div>`).join("");
+  $("#score-strip").innerHTML = state.players.map(p => `<div class="sc"><span class="sc-n">${p.name}</span><span class="sc-v">${p.score}</span></div>`).join("");
 }
 
 /* ---- SHOUT ---- */
@@ -238,14 +261,12 @@ function setupShout() {
     if (listening) {
       listening = false; stopRecog();
       $("#shout-mic").classList.remove("listening");
-      status.textContent = "Paused — tap to listen again";
-      SYNAPSE_NEURONS.setIntensity(1);
+      status.textContent = "Paused — tap to listen";
       return;
     }
     listening = true; solved = false;
     $("#shout-mic").classList.add("listening");
     status.textContent = "Listening…";
-    SYNAPSE_NEURONS.setIntensity(2);
     startRecog((r) => {
       live.textContent = r.interim || r.final;
       const pool = [r.final, r.interim, ...(r.alts || [])].join(" ");
@@ -262,7 +283,6 @@ function setupShout() {
 }
 
 function onShoutCorrect() {
-  SYNAPSE_NEURONS.burst(10);
   $("#shout-correct").classList.add("show");
   $("#shout-status").textContent = "Who shouted it first?";
   const wrap = $("#shout-award"); wrap.innerHTML = "";
@@ -295,7 +315,7 @@ function runExplainTurn() {
       <div class="timer-num" id="timer-num">${state.duration}</div>
     </div>
     <div class="explain-live" id="explain-live"></div>
-    <div class="row center">
+    <div class="row" style="justify-content:center">
       <button class="btn primary" id="explain-go">Start ${state.duration}s</button>
       <button class="btn link" id="explain-skip">Skip</button>
     </div>`;
@@ -305,14 +325,10 @@ function runExplainTurn() {
   ring.style.strokeDasharray = circ; ring.style.strokeDashoffset = 0;
   let timer = null, captured = "";
 
-  $("#explain-skip").onclick = () => {
-    stopRecog(); clearInterval(timer);
-    state.transcripts[p.name] = ""; state.turn++; runExplainTurn();
-  };
+  $("#explain-skip").onclick = () => { stopRecog(); clearInterval(timer); state.transcripts[p.name] = ""; state.turn++; runExplainTurn(); };
 
   $("#explain-go").onclick = () => {
     $("#explain-go").disabled = true; $("#explain-go").textContent = "Go";
-    SYNAPSE_NEURONS.setIntensity(2);
     let left = state.duration; num.textContent = left;
     if (speechSupported) {
       startRecog((r) => { captured = (r.final + " " + r.interim).trim(); live.textContent = captured; }, { continuous: true, keepAlive: () => left > 0 });
@@ -326,7 +342,7 @@ function runExplainTurn() {
         clearInterval(timer); stopRecog();
         const manual = $("#manual-explain");
         state.transcripts[p.name] = (manual ? manual.value : captured) || "";
-        SYNAPSE_NEURONS.setIntensity(1); state.turn++; runExplainTurn();
+        state.turn++; runExplainTurn();
       }
     }, 1000);
   };
@@ -334,14 +350,11 @@ function runExplainTurn() {
 
 async function judgeExplain() {
   $("#explain-stage").innerHTML = `<div class="judging"><div class="judging-dots"><span></span><span></span><span></span></div><div>${CONFIG?.ai?.enabled ? "Claude is judging…" : "Judging accuracy…"}</div></div>`;
-  SYNAPSE_NEURONS.setIntensity(2);
-
   const result = await judge(state.transcripts, state.current);
   if (result.winner) {
     const w = state.players.find(p => p.name === result.winner);
-    if (w) { w.score += 1; renderScoreStrip(); SYNAPSE_NEURONS.burst(10); }
+    if (w) { w.score += 1; renderScoreStrip(); }
   }
-
   const box = $("#explain-results");
   box.classList.add("show");
   box.innerHTML = `
@@ -349,8 +362,7 @@ async function judgeExplain() {
     <div class="rank-list">
       ${result.ranked.map((r, i) => `
         <div class="rank-row ${i === 0 && result.winner ? "win" : ""}">
-          <span class="rk">${i + 1}</span>
-          <span class="rk-name">${r.name}</span>
+          <span class="rk">${i + 1}</span><span class="rk-name">${r.name}</span>
           <span class="rk-bar"><span style="width:${Math.round((r.score || 0) * 100)}%"></span></span>
           <span class="rk-pct">${Math.round((r.score || 0) * 100)}%</span>
         </div>
@@ -358,28 +370,27 @@ async function judgeExplain() {
     </div>
     <div class="${result.winner ? "praise" : "roast"}">${result.roast}</div>
     <div class="reveal"><span class="reveal-label">The answer</span>${state.current.answer}</div>
-    <div class="row center"><button class="btn primary" id="explain-next">Next →</button></div>`;
+    <div class="row" style="justify-content:center"><button class="btn primary" id="explain-next">Next →</button></div>`;
   $("#explain-stage").innerHTML = "";
   $("#explain-next").onclick = () => { state.qIndex++; nextQuestion(); };
 }
 
 /* ---- reveal / advance ---- */
-function revealMiss() { stopRecog(); SYNAPSE_NEURONS.setIntensity(0.6); advanceWithReveal(true); }
-
+function revealMiss() { stopRecog(); advanceWithReveal(true); }
 function advanceWithReveal(missed, winnerName) {
   const box = $("#reveal-box");
   box.classList.add("show");
   box.innerHTML = `
-    ${missed ? `<div class="roast big">${pick(ROASTS)}</div>` : `<div class="praise big">Point to ${winnerName} — ${pick(PRAISE)}</div>`}
+    ${missed ? `<div class="roast big">${pick(ROASTS)}</div>` : `<div class="praise big">Tally to ${winnerName} — ${pick(PRAISE)}</div>`}
     <div class="reveal"><span class="reveal-label">The answer</span>${state.current.answer}</div>
-    <div class="row center"><button class="btn primary" id="reveal-next">Next →</button></div>`;
+    <div class="row" style="justify-content:center"><button class="btn primary" id="reveal-next">Next →</button></div>`;
   $$("#play-shout button").forEach(b => { if (!b.closest("#reveal-box")) b.disabled = true; });
   $("#reveal-next").onclick = () => { state.qIndex++; nextQuestion(); };
 }
 
 function endGame() {
   stopRecog();
-  SYNAPSE_NEURONS.burst(12);
+  unlockLandscape();
   const ranked = state.players.slice().sort((a, b) => b.score - a.score);
   const top = ranked[0];
   show("screen-end");
@@ -402,36 +413,43 @@ const ICONS = {
   heart: `<svg viewBox="0 0 24 24"><path d="M12 20s-7-4.5-7-9a4 4 0 0 1 7-2.5A4 4 0 0 1 19 11c0 4.5-7 9-7 9z"/><path d="M6 12h3l1.5-3 2 5 1.5-2H18"/></svg>`,
   flame: `<svg viewBox="0 0 24 24"><path d="M12 3c1 3 4 4 4 8a4 4 0 0 1-8 0c0-2 1-3 2-4 0 1 1 2 2 2 0-2-2-3 0-6z"/></svg>`,
   bulb: `<svg viewBox="0 0 24 24"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 1 4 10c-1 1-1 1-1 3H9c0-2 0-2-1-3a6 6 0 0 1 4-10z"/></svg>`,
-  doc: `<svg viewBox="0 0 24 24"><path d="M7 3h7l4 4v14H7zM14 3v4h4M9 12h6M9 16h6"/></svg>`
+  doc: `<svg viewBox="0 0 24 24"><path d="M7 3h7l4 4v14H7zM14 3v4h4M9 12h6M9 16h6"/></svg>`,
+  globe: `<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18"/></svg>`,
+  bank: `<svg viewBox="0 0 24 24"><path d="M4 9h16M5 9l7-5 7 5M6 9v8M10 9v8M14 9v8M18 9v8M4 20h16"/></svg>`,
+  atom: `<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="2"/><ellipse cx="12" cy="12" rx="9" ry="4"/><ellipse cx="12" cy="12" rx="9" ry="4" transform="rotate(60 12 12)"/><ellipse cx="12" cy="12" rx="9" ry="4" transform="rotate(120 12 12)"/></svg>`
 };
 
 /* ---------------- wire up ---------------- */
 function init() {
-  renderCategories();
   renderPlayers();
-  setMode("shout");
+  renderCategories();
 
-  $("#begin-btn").onclick = () => show("screen-setup");
+  // step 1
   $("#how-btn").onclick = () => $("#how-modal").classList.add("show");
   $("#how-close").onclick = () => $("#how-modal").classList.remove("show");
-
   $("#add-player-btn").onclick = () => { addPlayer($("#player-input").value); $("#player-input").value = ""; $("#player-input").focus(); };
   $("#player-input").addEventListener("keydown", (e) => { if (e.key === "Enter") $("#add-player-btn").click(); });
+  $("#players-next").onclick = () => { renderMode(); show("screen-mode"); };
 
-  $$(".mode-card").forEach(c => c.onclick = () => setMode(c.dataset.mode));
-  $$("#duration-row .seg").forEach(s => s.onclick = () => {
+  // step 2
+  $("#mode-back").onclick = () => show("screen-players");
+  $$(".mode-big").forEach(c => c.onclick = () => { if (!c.classList.contains("disabled")) selectMode(c.dataset.mode); });
+  $$("#time-block .seg").forEach(s => s.onclick = () => {
     state.duration = +s.dataset.sec;
-    $$("#duration-row .seg").forEach(x => x.classList.toggle("sel", x === s));
+    $$("#time-block .seg").forEach(x => x.classList.toggle("sel", x === s));
   });
+  $("#mode-next").onclick = () => { if (state.mode) show("screen-category"); };
 
-  $("#start-btn").onclick = startGame;
-  $("#back-home").onclick = () => { stopRecog(); show("screen-home"); };
-  $("#quit-btn").onclick = () => { stopRecog(); show("screen-home"); };
+  // step 3
+  $("#cat-back").onclick = () => show("screen-mode");
+
+  // play
+  $("#quit-btn").onclick = () => { stopRecog(); unlockLandscape(); show("screen-players"); };
   $("#score-toggle").onclick = () => $("#score-strip").classList.toggle("show");
-  $("#again-btn").onclick = () => show("screen-setup");
-  $("#end-home").onclick = () => show("screen-home");
 
-  if (!speechSupported) $("#mic-note").style.display = "block";
+  // end
+  $("#again-btn").onclick = () => { renderMode(); show("screen-mode"); };
+  $("#end-home").onclick = () => { state.players = []; renderPlayers(); show("screen-players"); };
 }
 
 document.addEventListener("DOMContentLoaded", init);

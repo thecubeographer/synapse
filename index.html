@@ -7,113 +7,118 @@
   <title>SYNAPSE</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <canvas id="neurons"></canvas>
-
   <main id="app">
 
-    <!-- HOME -->
-    <section id="screen-home" class="screen active">
-      <div class="home-inner">
-        <svg class="logo" viewBox="0 0 100 100" aria-hidden="true">
-          <line x1="50" y1="50" x2="22" y2="26"/><line x1="50" y1="50" x2="80" y2="30"/>
-          <line x1="50" y1="50" x2="26" y2="74"/><line x1="50" y1="50" x2="78" y2="72"/>
-          <line x1="50" y1="50" x2="50" y2="16"/>
-          <circle cx="50" cy="50" r="3.2"/>
-          <circle cx="22" cy="26" r="2.2"/><circle cx="80" cy="30" r="2.2"/>
-          <circle cx="26" cy="74" r="2.2"/><circle cx="78" cy="72" r="2.2"/>
-          <circle cx="50" cy="16" r="2.2"/>
-        </svg>
-        <h1 class="title">SYNAPSE</h1>
-        <p class="tag">A trivia game for the unplugged.<br/>Real questions. No phones. Think for yourself.</p>
-        <div class="home-btns">
-          <button class="btn primary" id="begin-btn">Start a game</button>
-          <button class="btn" id="how-btn">How it works</button>
-        </div>
-      </div>
-    </section>
-
-    <!-- SETUP -->
-    <section id="screen-setup" class="screen">
+    <!-- PLAYERS -->
+    <section id="screen-players" class="screen active">
       <div class="topbar">
-        <button class="icon-btn" id="back-home">←</button>
-        <span class="topbar-title">Set up</span>
-        <span class="spacer"></span>
+        <span class="wordmark">SYNAPSE</span>
+        <button class="icon-btn ghosty" id="how-btn">?</button>
       </div>
-
-      <div class="setup-scroll">
-        <h2 class="sec">Players</h2>
+      <div class="step">
+        <div class="step-head">
+          <span class="step-n">Step 1 of 3</span>
+          <h1 class="step-q">Who's playing?</h1>
+        </div>
         <div class="add-row">
           <input id="player-input" type="text" placeholder="Add a name" maxlength="14" autocomplete="off" />
           <button class="btn small" id="add-player-btn">Add</button>
         </div>
         <div id="player-list" class="player-list"></div>
-
-        <h2 class="sec">Mode</h2>
-        <div class="mode-grid">
-          <button class="mode-card sel" data-mode="shout">
-            <div class="mode-name">Shout It</div>
-            <div class="mode-desc">First to yell the right answer scores.</div>
-          </button>
-          <button class="mode-card" data-mode="explain">
-            <div class="mode-name">Explain It</div>
-            <div class="mode-desc">Timed explanations, judged for accuracy.</div>
-          </button>
-        </div>
-        <div class="row" id="duration-row" style="display:none">
-          <span class="dur-label">Time per player</span>
-          <button class="seg" data-sec="10">10s</button>
-          <button class="seg sel" data-sec="15">15s</button>
-          <button class="seg" data-sec="20">20s</button>
-        </div>
-
-        <h2 class="sec">Category</h2>
-        <div id="cat-list" class="cat-list"></div>
-
-        <p id="mic-note" class="mic-note" style="display:none">
-          This browser doesn't support the mic — use the manual buttons / type answers.
-        </p>
       </div>
-
-      <div class="setup-foot">
-        <button class="btn primary" id="start-btn" disabled>Start</button>
+      <div class="foot">
+        <button class="btn primary" id="players-next" disabled>Next</button>
       </div>
     </section>
 
-    <!-- PLAY -->
+    <!-- MODE -->
+    <section id="screen-mode" class="screen">
+      <div class="topbar">
+        <button class="icon-btn" id="mode-back">←</button>
+        <span class="wordmark small">SYNAPSE</span>
+        <span class="spacer"></span>
+      </div>
+      <div class="step">
+        <div class="step-head">
+          <span class="step-n">Step 2 of 3</span>
+          <h1 class="step-q">How do you want to play?</h1>
+        </div>
+        <div class="mode-stack">
+          <button class="mode-big" data-mode="shout">
+            <div class="mode-big-name">Shout It</div>
+            <div class="mode-big-desc">A question appears — first to yell the right answer gets a tally. <b>2+ players.</b></div>
+          </button>
+          <button class="mode-big" data-mode="explain">
+            <div class="mode-big-name">Explain It</div>
+            <div class="mode-big-desc">Each player gets a timer to explain out loud; the judge ranks accuracy. <b>1–3 players.</b></div>
+          </button>
+        </div>
+
+        <div id="time-block" class="time-block" style="display:none">
+          <span class="time-label">Seconds per player</span>
+          <div class="time-grid">
+            <button class="seg" data-sec="10">10s</button>
+            <button class="seg sel" data-sec="15">15s</button>
+            <button class="seg" data-sec="20">20s</button>
+            <button class="seg" data-sec="30">30s</button>
+          </div>
+        </div>
+      </div>
+      <div class="foot">
+        <button class="btn primary" id="mode-next" disabled>Next</button>
+      </div>
+    </section>
+
+    <!-- CATEGORY -->
+    <section id="screen-category" class="screen">
+      <div class="topbar">
+        <button class="icon-btn" id="cat-back">←</button>
+        <span class="wordmark small">SYNAPSE</span>
+        <span class="spacer"></span>
+      </div>
+      <div class="step">
+        <div class="step-head">
+          <span class="step-n">Step 3 of 3</span>
+          <h1 class="step-q">Pick a category</h1>
+        </div>
+        <div id="cat-list" class="cat-grid"></div>
+      </div>
+    </section>
+
+    <!-- PLAY (landscape) -->
     <section id="screen-play" class="screen play">
       <div class="play-top">
         <button class="icon-btn ghosty" id="quit-btn">✕</button>
         <span class="play-meta"><span id="q-cat">—</span> · <span id="q-progress">Q1</span></span>
-        <button class="icon-btn ghosty" id="score-toggle">123</button>
+        <button class="icon-btn ghosty" id="score-toggle">SCORE</button>
       </div>
 
       <div id="score-strip" class="score-strip"></div>
 
-      <!-- the question is the hero -->
+      <div class="play-body">
       <div class="q-stage" id="q-stage">
         <div class="q-text" id="q-text">…</div>
       </div>
 
-      <!-- controls -->
       <div class="play-controls">
         <!-- SHOUT -->
         <div id="play-shout" class="play-pane">
-          <div id="shout-correct" class="shout-correct">Correct</div>
+          <div id="shout-correct" class="shout-correct">Correct — tally it</div>
           <div id="shout-live" class="shout-live"></div>
           <div id="shout-award" class="award-grid"></div>
           <div class="ctrl-row">
             <button id="shout-mic" class="mic-btn" aria-label="Listen">
               <svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>
             </button>
-          </div>
-          <div id="shout-status" class="shout-status">Tap to listen, then shout</div>
-          <div class="row center wrap thin">
-            <button class="btn link" id="shout-claim">Someone got it</button>
-            <button class="btn link" id="shout-nobody">Nobody knew it</button>
+            <span id="shout-status" class="shout-status">Tap to listen, then shout</span>
+            <div class="row thin">
+              <button class="btn link" id="shout-claim">Got it</button>
+              <button class="btn link" id="shout-nobody">Nobody</button>
+            </div>
           </div>
         </div>
 
@@ -126,6 +131,7 @@
         <!-- REVEAL -->
         <div id="reveal-box" class="reveal-box"></div>
       </div>
+      </div>
     </section>
 
     <!-- END -->
@@ -136,7 +142,7 @@
         <div id="end-podium" class="podium"></div>
         <div class="home-btns">
           <button class="btn primary" id="again-btn">Play again</button>
-          <button class="btn" id="end-home">Home</button>
+          <button class="btn" id="end-home">New players</button>
         </div>
       </div>
     </section>
@@ -148,11 +154,11 @@
     <div class="modal-card">
       <h2>How it works</h2>
       <ul>
-        <li>Add your friends and pick a category of real-world problems.</li>
-        <li><b>Shout It:</b> a question appears, the mic listens, first to yell the right answer wins the point.</li>
+        <li>Add your friends, choose a mode, pick a category of real-world questions.</li>
+        <li><b>Shout It:</b> a question appears, the mic listens, first to yell the right answer earns a tally.</li>
         <li><b>Explain It:</b> everyone gets a timer to explain out loud; the judge ranks who was most accurate.</li>
         <li>Get it wrong? Expect a roast — then the real answer, so you actually learn it.</li>
-        <li>The point: make decisions <b>without</b> reaching for AI.</li>
+        <li>Phone flips to landscape during play. The point: decide things <b>without</b> AI.</li>
       </ul>
       <button class="btn primary" id="how-close">Got it</button>
     </div>

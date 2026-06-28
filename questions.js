@@ -337,6 +337,60 @@ const CATEGORIES = [
         key: ["avalanche", "highest", "interest", "apr", "snowball", "smallest", "minimum", "extra"]
       }
     ]
+  },
+  {
+    id: "geo",
+    name: "Geography",
+    blurb: "Maps, places, the planet.",
+    icon: "globe",
+    questions: [
+      { q: "What is the largest country in the world by land area?", accept: ["russia"], answer: "Russia — by a wide margin, spanning 11 time zones across Europe and Asia.", key: ["russia"] },
+      { q: "What is the capital of Australia? (Hint: it's not the famous one)", accept: ["canberra"], answer: "Canberra. Not Sydney or Melbourne — it was purpose-built as a compromise capital between the two rival cities.", key: ["canberra"] },
+      { q: "Which country now has the largest population in the world?", accept: ["india"], answer: "India — it overtook China in 2023.", key: ["india", "china", "2023"] },
+      { q: "What is the largest ocean on Earth?", accept: ["pacific"], answer: "The Pacific Ocean — larger than all the land on Earth combined.", key: ["pacific"] },
+      { q: "Which imaginary line divides Earth into the Northern and Southern hemispheres?", accept: ["equator"], answer: "The Equator — at 0° latitude.", key: ["equator", "latitude"] },
+      { q: "Which US state is the largest by area?", accept: ["alaska"], answer: "Alaska — more than twice the size of Texas.", key: ["alaska"] },
+      { q: "What is the smallest country in the world?", accept: ["vatican"], answer: "Vatican City — about 0.2 square miles, entirely within Rome.", key: ["vatican", "rome"] },
+      { q: "On which continent is the Sahara Desert?", accept: ["africa"], answer: "Africa — the Sahara stretches across most of North Africa.", key: ["africa", "north"] },
+      { q: "What is the tallest mountain on Earth above sea level?", accept: ["everest"], answer: "Mount Everest, ~29,032 ft, on the Nepal–Tibet border.", key: ["everest", "nepal"] },
+      { q: "The Great Barrier Reef lies off the coast of which country?", accept: ["australia"], answer: "Australia — off the northeast coast of Queensland; it's the largest living structure on Earth.", key: ["australia", "queensland"] }
+    ]
+  },
+  {
+    id: "civics",
+    name: "Politics & Civics",
+    blurb: "How government actually works.",
+    icon: "bank",
+    questions: [
+      { q: "How many U.S. senators does each state get, and how many are there in total?", accept: ["two", "2", "100", "hundred"], answer: "2 per state, regardless of population — 100 senators total.", key: ["two", "2", "100", "state"] },
+      { q: "What are the three branches of the U.S. government?", accept: ["legislative", "executive", "judicial"], answer: "Legislative (Congress — makes laws), Executive (President — enforces laws), and Judicial (the courts — interpret laws). They check and balance each other.", key: ["legislative", "executive", "judicial", "congress", "president", "courts"] },
+      { q: "How long is a U.S. presidential term, and how many terms can one person serve?", accept: ["four", "4", "two terms", "two", "eight"], answer: "4 years per term, with a maximum of 2 terms (8 years), set by the 22nd Amendment.", key: ["four", "4", "two", "terms", "22nd", "amendment"] },
+      { q: "What freedoms does the First Amendment protect?", accept: ["speech", "religion", "press", "assembly", "petition"], answer: "Freedom of religion, speech, the press, peaceful assembly, and the right to petition the government.", key: ["religion", "speech", "press", "assembly", "petition"] },
+      { q: "How many justices sit on the U.S. Supreme Court?", accept: ["nine", "9"], answer: "9 — one Chief Justice and eight Associate Justices. The number isn't fixed by the Constitution.", key: ["nine", "9", "chief"] },
+      { q: "What is the minimum age to be elected President of the United States?", accept: ["35", "thirty five", "thirty-five"], answer: "35 years old. You must also be a natural-born citizen and have lived in the U.S. for 14 years.", key: ["35", "thirty", "five", "natural", "born"] },
+      { q: "Which branch of government has the power to declare war?", accept: ["congress", "legislative"], answer: "Congress (the legislative branch). The President is Commander-in-Chief but can't formally declare war alone.", key: ["congress", "legislative", "president", "commander"] },
+      { q: "What are the first ten amendments to the Constitution collectively called?", accept: ["bill of rights", "bill"], answer: "The Bill of Rights — the first 10 amendments, protecting core individual freedoms.", key: ["bill", "rights", "ten", "10", "amendments"] },
+      { q: "How long is the term for a member of the U.S. House of Representatives?", accept: ["two", "2"], answer: "2 years — the entire House is up for election every two years.", key: ["two", "2", "years", "election"] },
+      { q: "What does it mean to 'veto' a bill, and who can override it?", accept: ["reject", "president", "override", "two thirds", "congress"], answer: "A veto is the President rejecting a bill instead of signing it into law. Congress can override the veto with a two-thirds vote in both the House and Senate.", key: ["reject", "president", "override", "two", "thirds", "congress"] }
+    ]
+  },
+  {
+    id: "generaled",
+    name: "General Ed",
+    blurb: "School stuff you should still know.",
+    icon: "atom",
+    questions: [
+      { q: "What is the chemical symbol for gold?", accept: ["au"], answer: "Au — from the Latin 'aurum'.", key: ["au", "aurum"] },
+      { q: "Who wrote Romeo and Juliet?", accept: ["shakespeare", "william"], answer: "William Shakespeare, around 1595.", key: ["shakespeare", "william"] },
+      { q: "What is the powerhouse of the cell?", accept: ["mitochondria", "mitochondrion"], answer: "The mitochondria — they produce most of the cell's energy (ATP).", key: ["mitochondria", "energy", "atp"] },
+      { q: "What planet is known as the Red Planet?", accept: ["mars"], answer: "Mars — its surface is rich in iron oxide (rust).", key: ["mars", "iron"] },
+      { q: "What is the square root of 144?", accept: ["12", "twelve"], answer: "12 (because 12 × 12 = 144).", key: ["12", "twelve"] },
+      { q: "What gas do plants absorb from the air that humans breathe out?", accept: ["carbon dioxide", "co2", "carbon"], answer: "Carbon dioxide (CO₂). Plants take it in and release oxygen during photosynthesis.", key: ["carbon", "dioxide", "co2", "photosynthesis", "oxygen"] },
+      { q: "Who painted the Mona Lisa?", accept: ["da vinci", "leonardo"], answer: "Leonardo da Vinci, in the early 1500s.", key: ["leonardo", "da", "vinci"] },
+      { q: "Roughly how many bones are in the adult human body?", accept: ["206", "two hundred"], answer: "206 bones (babies are born with about 270, which fuse together over time).", key: ["206", "270", "fuse"] },
+      { q: "What is the largest planet in our solar system?", accept: ["jupiter"], answer: "Jupiter — a gas giant more massive than all the other planets combined.", key: ["jupiter", "gas", "giant"] },
+      { q: "In what year did World War II end?", accept: ["1945", "forty five"], answer: "1945 — Germany surrendered in May, Japan in August/September.", key: ["1945", "germany", "japan"] }
+    ]
   }
 ];
 
