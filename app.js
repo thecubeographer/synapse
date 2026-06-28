@@ -41,6 +41,29 @@ const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
 const speechSupported = !!SR;
 let recog = null;
 
+// Collapse the repetition some speech engines (notably Android Chrome) produce:
+// consecutive duplicate words ("boil boil boil" -> "boil") and whole-phrase
+// loops ("call 911 call 911" -> "call 911").
+function dedupeTranscript(s) {
+  let words = (s || "").trim().split(/\s+/).filter(Boolean);
+  if (!words.length) return "";
+  const out = [];
+  for (const w of words) {
+    if (!out.length || out[out.length - 1].toLowerCase() !== w.toLowerCase()) out.push(w);
+  }
+  words = out;
+  const n = words.length;
+  for (let p = 1; p <= n / 2; p++) {
+    if (n % p !== 0) continue;
+    let periodic = true;
+    for (let i = p; i < n && periodic; i++) {
+      if (words[i].toLowerCase() !== words[i % p].toLowerCase()) periodic = false;
+    }
+    if (periodic) { words = words.slice(0, p); break; }
+  }
+  return words.join(" ");
+}
+
 function startRecog(onResult, opts = {}) {
   if (!SR) return false;
   stopRecog();
@@ -49,11 +72,9 @@ function startRecog(onResult, opts = {}) {
   recog.continuous = opts.continuous ?? true;
   recog.interimResults = true;
   recog.maxAlternatives = 1;
-  let committed = "";          // finals from prior (auto-restarted) sessions
+  let committed = "";
   let lastSessionFinal = "";
   recog.onresult = (e) => {
-    // Rebuild from the full result list every event — never append, or browsers
-    // that re-report all results (resultIndex 0) duplicate every word.
     let sessionFinal = "", interim = "";
     for (let i = 0; i < e.results.length; i++) {
       const res = e.results[i];
@@ -61,12 +82,13 @@ function startRecog(onResult, opts = {}) {
       else interim += res[0].transcript + " ";
     }
     lastSessionFinal = sessionFinal;
-    const final = (committed + sessionFinal).replace(/\s+/g, " ").trim();
-    onResult({ final, interim: interim.trim(), full: (final + " " + interim).replace(/\s+/g, " ").trim() });
+    const final = dedupeTranscript(committed + sessionFinal);
+    const interimClean = dedupeTranscript(interim);
+    onResult({ final, interim: interimClean, full: dedupeTranscript(final + " " + interimClean) });
   };
   recog.onerror = () => {};
   recog.onend = () => {
-    committed = (committed + lastSessionFinal);
+    committed = dedupeTranscript(committed + lastSessionFinal) + " ";
     lastSessionFinal = "";
     if (opts.keepAlive && opts.keepAlive()) { try { recog.start(); } catch (_) {} }
   };
@@ -80,14 +102,36 @@ function matchesAccept(text, accept) {
   const t = " " + normalize(text) + " ";
   return accept.some(kw => t.includes(normalize(kw)));
 }
+// crude stemmer so "explaining/explained/explains" all match "explain"
+function stem(w) {
+  w = w.toLowerCase();
+  if (w.length <= 3) return w;
+  return w.replace(/(ations?|ments?|ings?|edly|ed|ly|es|s)$/, "").replace(/i$/, "y");
+}
+function stemSet(text) {
+  return new Set(normalize(text).split(" ").filter(Boolean).map(stem));
+}
+// a key concept counts if its stems appear (exact, stem, or partial substring)
+function keyHit(keyTerm, saidSet, saidStr) {
+  const parts = normalize(keyTerm).split(" ").filter(Boolean).map(stem);
+  return parts.every(p =>
+    saidSet.has(p) ||
+    [...saidSet].some(s => (s.length > 3 && (s.includes(p) || p.includes(s)))) ||
+    saidStr.includes(p)
+  );
+}
 function scoreExplanation(text, q) {
   const t = normalize(text);
   if (!t) return { score: 0, hits: [] };
-  const words = t.split(" ").filter(Boolean);
-  const hits = q.key.filter(k => t.includes(normalize(k)));
+  const said = stemSet(text);
+  const saidStr = " " + t + " ";
+  const hits = q.key.filter(k => keyHit(k, said, saidStr));
   const coverage = hits.length / q.key.length;
-  const effort = Math.min(words.length / 25, 1) * 0.2;
-  return { score: Math.min(1, coverage + effort), hits };
+  const words = t.split(" ").filter(Boolean).length;
+  const effort = Math.min(words / 18, 1) * 0.15;
+  // curve so a partly-right answer reads fairly (covering ~half the concepts ≈ 70%)
+  const score = Math.min(1, Math.pow(coverage, 0.6) + effort);
+  return { score, hits };
 }
 function localJudge(transcripts, q) {
   const ranked = state.players.map(p => {
@@ -344,7 +388,11 @@ function runExplainTurn() {
 
   // timer starts immediately — no button
   if (speechSupported) {
-    startRecog((r) => { captured = r.full; live.textContent = captured; }, { continuous: true, keepAlive: () => left > 0 });
+    startRecog((r) => {
+      const cand = (r.final.length >= r.interim.length) ? r.final : r.interim;
+      if (cand.length > captured.length) captured = cand;   // keep the best, never shrink/flicker
+      live.textContent = captured;
+    }, { continuous: true, keepAlive: () => left > 0 });
   } else {
     live.innerHTML = `<textarea id="manual-explain" placeholder="(mic unavailable) type the gist…"></textarea>`;
   }
