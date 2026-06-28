@@ -99,7 +99,6 @@
 
       <div id="score-strip" class="score-strip"></div>
 
-      <div class="play-body">
       <div class="q-stage" id="q-stage">
         <div class="q-text" id="q-text">…</div>
       </div>
@@ -125,13 +124,19 @@
         <!-- EXPLAIN -->
         <div id="play-explain" class="play-pane" style="display:none">
           <div id="explain-stage" class="explain-stage"></div>
-          <div id="explain-results" class="explain-results"></div>
         </div>
+      </div>
+    </section>
 
-        <!-- REVEAL -->
-        <div id="reveal-box" class="reveal-box"></div>
+    <!-- REVEAL / ANSWER (its own page) -->
+    <section id="screen-reveal" class="screen">
+      <div class="play-top">
+        <button class="icon-btn ghosty" id="reveal-quit">✕</button>
+        <span class="play-meta"><span id="reveal-cat">—</span> · <span id="reveal-progress"></span></span>
+        <span class="spacer"></span>
       </div>
-      </div>
+      <div class="reveal-scroll" id="reveal-content"></div>
+      <div class="foot"><button class="btn primary" id="reveal-next">Next →</button></div>
     </section>
 
     <!-- END -->

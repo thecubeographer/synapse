@@ -119,14 +119,13 @@ function show(id) {
   window.scrollTo(0, 0);
 }
 
-/* ---------------- landscape ---------------- */
-async function lockLandscape() {
-  try { if (document.documentElement.requestFullscreen) await document.documentElement.requestFullscreen(); } catch (_) {}
-  try { if (screen.orientation && screen.orientation.lock) await screen.orientation.lock("landscape"); } catch (_) {}
-}
-function unlockLandscape() {
-  try { if (screen.orientation && screen.orientation.unlock) screen.orientation.unlock(); } catch (_) {}
-  try { if (document.fullscreenElement && document.exitFullscreen) document.exitFullscreen(); } catch (_) {}
+/* ---------------- reveal page ---------------- */
+function showReveal(innerHtml) {
+  const cat = CATEGORIES.find(c => c.id === state.catId);
+  $("#reveal-cat").textContent = cat.name;
+  $("#reveal-progress").textContent = `Q${state.qIndex + 1}/${state.queue.length}`;
+  $("#reveal-content").innerHTML = innerHtml;
+  show("screen-reveal");
 }
 
 /* ---------------- step 1: players ---------------- */
@@ -210,12 +209,10 @@ function startGame(catId) {
   state.qIndex = 0;
 
   const t = CATEGORY_THEME[catId] || {};
-  const play = $("#screen-play");
-  play.style.setProperty("--qbg", t.bg || "var(--paper)");
-  play.style.setProperty("--qaccent", t.accent || "var(--accent)");
+  document.documentElement.style.setProperty("--qbg", t.bg || "var(--paper)");
+  document.documentElement.style.setProperty("--qaccent", t.accent || "var(--accent)");
 
   $("#score-strip").classList.remove("show");
-  lockLandscape();            // user gesture (card tap) → allowed
   show("screen-play");
   nextQuestion();
 }
@@ -245,7 +242,6 @@ function renderScoreStrip() {
 function setupShout() {
   $("#play-shout").style.display = "block";
   $("#play-explain").style.display = "none";
-  $("#reveal-box").classList.remove("show");
   const live = $("#shout-live"); live.textContent = "";
   const status = $("#shout-status");
   status.textContent = speechSupported ? "Tap to listen, then shout" : "Mic unavailable — tap who got it";
@@ -279,7 +275,7 @@ function setupShout() {
   };
 
   $("#shout-claim").onclick = () => onShoutCorrect();
-  $("#shout-nobody").onclick = () => revealMiss();
+  $("#shout-nobody").onclick = () => { stopRecog(); revealShout(true); };
 }
 
 function onShoutCorrect() {
@@ -289,18 +285,23 @@ function onShoutCorrect() {
   state.players.forEach(p => {
     const b = document.createElement("button");
     b.className = "award-btn"; b.textContent = p.name;
-    b.onclick = () => { p.score += 1; renderScoreStrip(); advanceWithReveal(false, p.name); };
+    b.onclick = () => { stopRecog(); p.score += 1; renderScoreStrip(); revealShout(false, p.name); };
     wrap.appendChild(b);
   });
+}
+
+function revealShout(missed, winnerName) {
+  const html = `
+    <div class="reveal-q">${state.current.q}</div>
+    ${missed ? `<div class="roast big">${pick(ROASTS)}</div>` : `<div class="praise big">Tally to ${winnerName} — ${pick(PRAISE)}</div>`}
+    <div class="reveal"><span class="reveal-label">The answer</span><div class="answer-big">${state.current.answer}</div></div>`;
+  showReveal(html);
 }
 
 /* ---- EXPLAIN ---- */
 function setupExplain() {
   $("#play-shout").style.display = "none";
   $("#play-explain").style.display = "block";
-  $("#reveal-box").classList.remove("show");
-  $("#explain-results").classList.remove("show");
-  $("#explain-results").innerHTML = "";
   runExplainTurn();
 }
 
@@ -355,9 +356,8 @@ async function judgeExplain() {
     const w = state.players.find(p => p.name === result.winner);
     if (w) { w.score += 1; renderScoreStrip(); }
   }
-  const box = $("#explain-results");
-  box.classList.add("show");
-  box.innerHTML = `
+  const html = `
+    <div class="reveal-q">${state.current.q}</div>
     <div class="verdict">${result.verdict}</div>
     <div class="rank-list">
       ${result.ranked.map((r, i) => `
@@ -369,28 +369,12 @@ async function judgeExplain() {
         ${r.note ? `<div class="rk-note">${r.note}</div>` : ""}`).join("")}
     </div>
     <div class="${result.winner ? "praise" : "roast"}">${result.roast}</div>
-    <div class="reveal"><span class="reveal-label">The answer</span>${state.current.answer}</div>
-    <div class="row" style="justify-content:center"><button class="btn primary" id="explain-next">Next →</button></div>`;
-  $("#explain-stage").innerHTML = "";
-  $("#explain-next").onclick = () => { state.qIndex++; nextQuestion(); };
-}
-
-/* ---- reveal / advance ---- */
-function revealMiss() { stopRecog(); advanceWithReveal(true); }
-function advanceWithReveal(missed, winnerName) {
-  const box = $("#reveal-box");
-  box.classList.add("show");
-  box.innerHTML = `
-    ${missed ? `<div class="roast big">${pick(ROASTS)}</div>` : `<div class="praise big">Tally to ${winnerName} — ${pick(PRAISE)}</div>`}
-    <div class="reveal"><span class="reveal-label">The answer</span>${state.current.answer}</div>
-    <div class="row" style="justify-content:center"><button class="btn primary" id="reveal-next">Next →</button></div>`;
-  $$("#play-shout button").forEach(b => { if (!b.closest("#reveal-box")) b.disabled = true; });
-  $("#reveal-next").onclick = () => { state.qIndex++; nextQuestion(); };
+    <div class="reveal"><span class="reveal-label">The answer</span><div class="answer-big">${state.current.answer}</div></div>`;
+  showReveal(html);
 }
 
 function endGame() {
   stopRecog();
-  unlockLandscape();
   const ranked = state.players.slice().sort((a, b) => b.score - a.score);
   const top = ranked[0];
   show("screen-end");
@@ -444,8 +428,12 @@ function init() {
   $("#cat-back").onclick = () => show("screen-mode");
 
   // play
-  $("#quit-btn").onclick = () => { stopRecog(); unlockLandscape(); show("screen-players"); };
+  $("#quit-btn").onclick = () => { stopRecog(); show("screen-players"); };
   $("#score-toggle").onclick = () => $("#score-strip").classList.toggle("show");
+
+  // reveal / answer page
+  $("#reveal-quit").onclick = () => { stopRecog(); show("screen-players"); };
+  $("#reveal-next").onclick = () => { state.qIndex++; show("screen-play"); nextQuestion(); };
 
   // end
   $("#again-btn").onclick = () => { renderMode(); show("screen-mode"); };
