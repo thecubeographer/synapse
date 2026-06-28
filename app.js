@@ -48,22 +48,31 @@ function startRecog(onResult, opts = {}) {
   recog.lang = "en-US";
   recog.continuous = opts.continuous ?? true;
   recog.interimResults = true;
-  recog.maxAlternatives = 3;
-  let finalText = "";
+  recog.maxAlternatives = 1;
+  let committed = "";          // finals from prior (auto-restarted) sessions
+  let lastSessionFinal = "";
   recog.onresult = (e) => {
-    let interim = "";
-    for (let i = e.resultIndex; i < e.results.length; i++) {
+    // Rebuild from the full result list every event — never append, or browsers
+    // that re-report all results (resultIndex 0) duplicate every word.
+    let sessionFinal = "", interim = "";
+    for (let i = 0; i < e.results.length; i++) {
       const res = e.results[i];
-      if (res.isFinal) finalText += " " + res[0].transcript;
-      else interim += " " + res[0].transcript;
-      onResult({ interim: interim.trim(), final: finalText.trim(), alts: Array.from(res).map(r => r.transcript), isFinal: res.isFinal });
+      if (res.isFinal) sessionFinal += res[0].transcript + " ";
+      else interim += res[0].transcript + " ";
     }
+    lastSessionFinal = sessionFinal;
+    const final = (committed + sessionFinal).replace(/\s+/g, " ").trim();
+    onResult({ final, interim: interim.trim(), full: (final + " " + interim).replace(/\s+/g, " ").trim() });
   };
   recog.onerror = () => {};
-  recog.onend = () => { if (opts.keepAlive && opts.keepAlive()) { try { recog.start(); } catch (_) {} } };
+  recog.onend = () => {
+    committed = (committed + lastSessionFinal);
+    lastSessionFinal = "";
+    if (opts.keepAlive && opts.keepAlive()) { try { recog.start(); } catch (_) {} }
+  };
   try { recog.start(); return true; } catch (_) { return false; }
 }
-function stopRecog() { if (recog) { try { recog.onend = null; recog.stop(); } catch (_) {} } }
+function stopRecog() { if (recog) { try { recog.onend = null; recog.stop(); } catch (_) {} recog = null; } }
 
 /* ---------------- judging ---------------- */
 function normalize(s) { return (s || "").toLowerCase().replace(/[^a-z0-9\s]/g, " ").replace(/\s+/g, " ").trim(); }
@@ -265,8 +274,7 @@ function setupShout() {
     status.textContent = "Listening…";
     startRecog((r) => {
       live.textContent = r.interim || r.final;
-      const pool = [r.final, r.interim, ...(r.alts || [])].join(" ");
-      if (!solved && matchesAccept(pool, state.current.accept)) {
+      if (!solved && matchesAccept(r.full, state.current.accept)) {
         solved = true; listening = false; stopRecog();
         $("#shout-mic").classList.remove("listening");
         onShoutCorrect();
@@ -309,7 +317,7 @@ function runExplainTurn() {
   if (state.turn >= state.players.length) return judgeExplain();
   const p = state.players[state.turn];
   $("#explain-stage").innerHTML = `
-    <div class="turn-name">${p.name}<span class="turn-of"> — your turn</span></div>
+    <div class="turn-name">${p.name}<span class="turn-of"> — go!</span></div>
     <div class="turn-sub">Explain your answer out loud</div>
     <div class="timer-ring">
       <svg viewBox="0 0 120 120"><circle class="ring-bg" cx="60" cy="60" r="54"/><circle class="ring-fg" id="ring-fg" cx="60" cy="60" r="54"/></svg>
@@ -317,36 +325,34 @@ function runExplainTurn() {
     </div>
     <div class="explain-live" id="explain-live"></div>
     <div class="row" style="justify-content:center">
-      <button class="btn primary" id="explain-go">Start ${state.duration}s</button>
-      <button class="btn link" id="explain-skip">Skip</button>
+      <button class="btn link" id="explain-skip">Skip turn</button>
     </div>`;
 
   const live = $("#explain-live"), num = $("#timer-num"), ring = $("#ring-fg");
   const circ = 2 * Math.PI * 54;
   ring.style.strokeDasharray = circ; ring.style.strokeDashoffset = 0;
-  let timer = null, captured = "";
+  let left = state.duration, captured = "", timer = null;
 
-  $("#explain-skip").onclick = () => { stopRecog(); clearInterval(timer); state.transcripts[p.name] = ""; state.turn++; runExplainTurn(); };
-
-  $("#explain-go").onclick = () => {
-    $("#explain-go").disabled = true; $("#explain-go").textContent = "Go";
-    let left = state.duration; num.textContent = left;
-    if (speechSupported) {
-      startRecog((r) => { captured = (r.final + " " + r.interim).trim(); live.textContent = captured; }, { continuous: true, keepAlive: () => left > 0 });
-    } else {
-      live.innerHTML = `<textarea id="manual-explain" placeholder="(mic unavailable) type the gist…"></textarea>`;
-    }
-    timer = setInterval(() => {
-      left--; num.textContent = Math.max(left, 0);
-      ring.style.strokeDashoffset = circ * (1 - left / state.duration);
-      if (left <= 0) {
-        clearInterval(timer); stopRecog();
-        const manual = $("#manual-explain");
-        state.transcripts[p.name] = (manual ? manual.value : captured) || "";
-        state.turn++; runExplainTurn();
-      }
-    }, 1000);
+  const finish = () => {
+    clearInterval(timer); stopRecog();
+    const manual = $("#manual-explain");
+    state.transcripts[p.name] = (manual ? manual.value : captured) || "";
+    state.turn++; runExplainTurn();
   };
+
+  $("#explain-skip").onclick = () => { clearInterval(timer); stopRecog(); state.transcripts[p.name] = ""; state.turn++; runExplainTurn(); };
+
+  // timer starts immediately — no button
+  if (speechSupported) {
+    startRecog((r) => { captured = r.full; live.textContent = captured; }, { continuous: true, keepAlive: () => left > 0 });
+  } else {
+    live.innerHTML = `<textarea id="manual-explain" placeholder="(mic unavailable) type the gist…"></textarea>`;
+  }
+  timer = setInterval(() => {
+    left--; num.textContent = Math.max(left, 0);
+    ring.style.strokeDashoffset = circ * (1 - left / state.duration);
+    if (left <= 0) finish();
+  }, 1000);
 }
 
 async function judgeExplain() {
