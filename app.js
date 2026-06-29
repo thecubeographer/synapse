@@ -47,19 +47,21 @@ let recog = null;
 function dedupeTranscript(s) {
   let words = (s || "").trim().split(/\s+/).filter(Boolean);
   if (!words.length) return "";
-  const out = [];
-  for (const w of words) {
-    if (!out.length || out[out.length - 1].toLowerCase() !== w.toLowerCase()) out.push(w);
-  }
-  words = out;
-  const n = words.length;
-  for (let p = 1; p <= n / 2; p++) {
-    if (n % p !== 0) continue;
-    let periodic = true;
-    for (let i = p; i < n && periodic; i++) {
-      if (words[i].toLowerCase() !== words[i % p].toLowerCase()) periodic = false;
+  // Collapse any IMMEDIATELY repeated block of words (handles "x x x x" and
+  // "in the ground in the ground in the ground"), repeating until stable.
+  let changed = true, guard = 0;
+  while (changed && guard++ < 400) {
+    changed = false;
+    const max = Math.floor(words.length / 2);
+    for (let len = 1; len <= max && !changed; len++) {
+      for (let i = 0; i + 2 * len <= words.length; i++) {
+        let eq = true;
+        for (let k = 0; k < len; k++) {
+          if (words[i + k].toLowerCase() !== words[i + len + k].toLowerCase()) { eq = false; break; }
+        }
+        if (eq) { words.splice(i + len, len); changed = true; break; }
+      }
     }
-    if (periodic) { words = words.slice(0, p); break; }
   }
   return words.join(" ");
 }
@@ -72,29 +74,43 @@ function startRecog(onResult, opts = {}) {
   recog.continuous = opts.continuous ?? true;
   recog.interimResults = true;
   recog.maxAlternatives = 1;
-  let committed = "";
-  let lastSessionFinal = "";
+  // Track the single longest clean transcript instead of concatenating across
+  // sessions — concatenation was what produced the repeated/overlapping text.
+  let best = "";
   recog.onresult = (e) => {
-    let sessionFinal = "", interim = "";
+    let finalT = "", interim = "";
     for (let i = 0; i < e.results.length; i++) {
       const res = e.results[i];
-      if (res.isFinal) sessionFinal += res[0].transcript + " ";
+      if (res.isFinal) finalT += res[0].transcript + " ";
       else interim += res[0].transcript + " ";
     }
-    lastSessionFinal = sessionFinal;
-    const final = dedupeTranscript(committed + sessionFinal);
-    const interimClean = dedupeTranscript(interim);
-    onResult({ final, interim: interimClean, full: dedupeTranscript(final + " " + interimClean) });
+    const current = dedupeTranscript(finalT + " " + interim);
+    if (current.length > best.length) best = current;
+    onResult({ text: best });
   };
   recog.onerror = () => {};
-  recog.onend = () => {
-    committed = dedupeTranscript(committed + lastSessionFinal) + " ";
-    lastSessionFinal = "";
-    if (opts.keepAlive && opts.keepAlive()) { try { recog.start(); } catch (_) {} }
-  };
+  recog.onend = () => { if (opts.keepAlive && opts.keepAlive()) { try { recog.start(); } catch (_) {} } };
   try { recog.start(); return true; } catch (_) { return false; }
 }
 function stopRecog() { if (recog) { try { recog.onend = null; recog.stop(); } catch (_) {} recog = null; } }
+
+/* ---------------- text-to-speech (read the question aloud) ---------------- */
+function cancelSpeak() { try { if (window.speechSynthesis) window.speechSynthesis.cancel(); } catch (_) {} }
+function speakThen(text, onDone) {
+  let done = false;
+  const go = () => { if (done) return; done = true; onDone(); };
+  try {
+    if (!("speechSynthesis" in window)) return go();
+    cancelSpeak();
+    const u = new SpeechSynthesisUtterance(text);
+    u.rate = 1.0; u.pitch = 1.0;
+    u.onend = go;
+    u.onerror = go;
+    window.speechSynthesis.speak(u);
+    // Safety net: some browsers never fire onend — start anyway after an estimate.
+    setTimeout(go, Math.min(15000, 2000 + text.length * 65));
+  } catch (_) { go(); }
+}
 
 /* ---------------- judging ---------------- */
 function normalize(s) { return (s || "").toLowerCase().replace(/[^a-z0-9\s]/g, " ").replace(/\s+/g, " ").trim(); }
@@ -272,6 +288,7 @@ function startGame(catId) {
 
 function nextQuestion() {
   stopRecog();
+  cancelSpeak();
   if (state.qIndex >= state.queue.length) return endGame();
   const cat = CATEGORIES.find(c => c.id === state.catId);
   state.current = cat.questions[state.queue[state.qIndex]];
@@ -317,8 +334,8 @@ function setupShout() {
     $("#shout-mic").classList.add("listening");
     status.textContent = "Listening…";
     startRecog((r) => {
-      live.textContent = r.interim || r.final;
-      if (!solved && matchesAccept(r.full, state.current.accept)) {
+      live.textContent = r.text;
+      if (!solved && matchesAccept(r.text, state.current.accept)) {
         solved = true; listening = false; stopRecog();
         $("#shout-mic").classList.remove("listening");
         onShoutCorrect();
@@ -361,8 +378,8 @@ function runExplainTurn() {
   if (state.turn >= state.players.length) return judgeExplain();
   const p = state.players[state.turn];
   $("#explain-stage").innerHTML = `
-    <div class="turn-name">${p.name}<span class="turn-of"> — go!</span></div>
-    <div class="turn-sub">Explain your answer out loud</div>
+    <div class="turn-name">${p.name}<span class="turn-of" id="turn-of"> — get ready</span></div>
+    <div class="turn-sub" id="explain-sub">Listen to the question…</div>
     <div class="timer-ring">
       <svg viewBox="0 0 120 120"><circle class="ring-bg" cx="60" cy="60" r="54"/><circle class="ring-fg" id="ring-fg" cx="60" cy="60" r="54"/></svg>
       <div class="timer-num" id="timer-num">${state.duration}</div>
@@ -375,7 +392,7 @@ function runExplainTurn() {
   const live = $("#explain-live"), num = $("#timer-num"), ring = $("#ring-fg");
   const circ = 2 * Math.PI * 54;
   ring.style.strokeDasharray = circ; ring.style.strokeDashoffset = 0;
-  let left = state.duration, captured = "", timer = null;
+  let left = state.duration, captured = "", timer = null, answering = false;
 
   const finish = () => {
     clearInterval(timer); stopRecog();
@@ -384,23 +401,27 @@ function runExplainTurn() {
     state.turn++; runExplainTurn();
   };
 
-  $("#explain-skip").onclick = () => { clearInterval(timer); stopRecog(); state.transcripts[p.name] = ""; state.turn++; runExplainTurn(); };
+  $("#explain-skip").onclick = () => { cancelSpeak(); clearInterval(timer); stopRecog(); state.transcripts[p.name] = ""; state.turn++; runExplainTurn(); };
 
-  // timer starts immediately — no button
-  if (speechSupported) {
-    startRecog((r) => {
-      const cand = (r.final.length >= r.interim.length) ? r.final : r.interim;
-      if (cand.length > captured.length) captured = cand;   // keep the best, never shrink/flicker
-      live.textContent = captured;
-    }, { continuous: true, keepAlive: () => left > 0 });
-  } else {
-    live.innerHTML = `<textarea id="manual-explain" placeholder="(mic unavailable) type the gist…"></textarea>`;
-  }
-  timer = setInterval(() => {
-    left--; num.textContent = Math.max(left, 0);
-    ring.style.strokeDashoffset = circ * (1 - left / state.duration);
-    if (left <= 0) finish();
-  }, 1000);
+  // mic + timer begin only AFTER the question is read aloud (no feedback into the mic)
+  const beginAnswering = () => {
+    if (answering) return; answering = true;
+    const turnOf = $("#turn-of"), sub = $("#explain-sub");
+    if (turnOf) turnOf.textContent = " — go!";
+    if (sub) sub.textContent = "Explain your answer out loud";
+    if (speechSupported) {
+      startRecog((r) => { captured = r.text; live.textContent = captured; }, { continuous: true, keepAlive: () => left > 0 });
+    } else {
+      live.innerHTML = `<textarea id="manual-explain" placeholder="(mic unavailable) type the gist…"></textarea>`;
+    }
+    timer = setInterval(() => {
+      left--; num.textContent = Math.max(left, 0);
+      ring.style.strokeDashoffset = circ * (1 - left / state.duration);
+      if (left <= 0) finish();
+    }, 1000);
+  };
+
+  speakThen(`${p.name}. ${state.current.q}`, beginAnswering);
 }
 
 async function judgeExplain() {
@@ -429,6 +450,7 @@ async function judgeExplain() {
 
 function endGame() {
   stopRecog();
+  cancelSpeak();
   const ranked = state.players.slice().sort((a, b) => b.score - a.score);
   const top = ranked[0];
   show("screen-end");
@@ -482,11 +504,11 @@ function init() {
   $("#cat-back").onclick = () => show("screen-mode");
 
   // play
-  $("#quit-btn").onclick = () => { stopRecog(); show("screen-players"); };
+  $("#quit-btn").onclick = () => { stopRecog(); cancelSpeak(); show("screen-players"); };
   $("#score-toggle").onclick = () => $("#score-strip").classList.toggle("show");
 
   // reveal / answer page
-  $("#reveal-quit").onclick = () => { stopRecog(); show("screen-players"); };
+  $("#reveal-quit").onclick = () => { stopRecog(); cancelSpeak(); show("screen-players"); };
   $("#reveal-next").onclick = () => { state.qIndex++; show("screen-play"); nextQuestion(); };
 
   // end
