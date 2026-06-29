@@ -8,8 +8,8 @@
 const CONFIG = {
   ai: {
     // FREE setup in ~5 min: see SETUP_AI.md (free Gemini key + free Cloudflare Worker).
-    enabled: false,                                  // <-- flip to true after you deploy the Worker
-    endpoint: "https://synapse-judge.YOURNAME.workers.dev",  // <-- paste your Worker URL here
+    enabled: true,
+    endpoint: "https://synapse-judge.joseph-miser06.workers.dev",
     timeoutMs: 12000
   }
 };
