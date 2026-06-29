@@ -67,20 +67,26 @@ async function resolveKey(v) {
 }
 
 async function callGemini(env, userPayload, apiKey) {
-  const model = env.GEMINI_MODEL || "gemini-2.0-flash";
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
-  const res = await fetch(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      system_instruction: { parts: [{ text: JUDGE_SYSTEM }] },
-      contents: [{ role: "user", parts: [{ text: userPayload }] }],
-      generationConfig: { temperature: 0.4, responseMimeType: "application/json" },
-    }),
+  // Free-tier quota is per-model, so try several until one has room.
+  const models = (env.GEMINI_MODEL ? [env.GEMINI_MODEL] : [])
+    .concat(["gemini-2.5-flash", "gemini-2.0-flash", "gemini-2.5-flash-lite", "gemini-1.5-flash"]);
+  const body = JSON.stringify({
+    system_instruction: { parts: [{ text: JUDGE_SYSTEM }] },
+    contents: [{ role: "user", parts: [{ text: userPayload }] }],
+    generationConfig: { temperature: 0.4, responseMimeType: "application/json" },
   });
-  if (!res.ok) throw new Error("gemini " + res.status + " " + (await res.text()).slice(0, 200));
-  const j = await res.json();
-  return j?.candidates?.[0]?.content?.parts?.[0]?.text || "";
+  let lastErr = "";
+  for (const model of models) {
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+    const res = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body });
+    if (res.ok) {
+      const j = await res.json();
+      return j?.candidates?.[0]?.content?.parts?.[0]?.text || "";
+    }
+    lastErr = "gemini " + res.status + " [" + model + "] " + (await res.text()).slice(0, 160);
+    if (res.status !== 429 && res.status !== 404) break; // only fall through on quota / not-found
+  }
+  throw new Error(lastErr || "gemini failed");
 }
 
 async function callClaude(env, userPayload, apiKey) {
