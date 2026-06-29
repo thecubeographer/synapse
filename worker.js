@@ -41,8 +41,8 @@ export default {
 
     // Works whether the key is a plain per-worker secret (string) OR a
     // Secrets Store binding (object with async .get()).
-    const geminiKey = await resolveKey(env.GEMINI_API_KEY);
-    const claudeKey = await resolveKey(env.ANTHROPIC_API_KEY);
+    const geminiKey = await resolveKey(env.GEMINI_API_KEY || env.GeminiAPI);
+    const claudeKey = await resolveKey(env.ANTHROPIC_API_KEY || env.CLAUDE_API_KEY || env.ClaudeAPI);
 
     try {
       let text;
