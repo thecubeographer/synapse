@@ -39,10 +39,15 @@ export default {
 
     const userPayload = JSON.stringify({ question, idealAnswer, answers });
 
+    // Works whether the key is a plain per-worker secret (string) OR a
+    // Secrets Store binding (object with async .get()).
+    const geminiKey = await resolveKey(env.GEMINI_API_KEY);
+    const claudeKey = await resolveKey(env.ANTHROPIC_API_KEY);
+
     try {
       let text;
-      if (env.GEMINI_API_KEY) text = await callGemini(env, userPayload);
-      else if (env.ANTHROPIC_API_KEY) text = await callClaude(env, userPayload);
+      if (geminiKey) text = await callGemini(env, userPayload, geminiKey);
+      else if (claudeKey) text = await callClaude(env, userPayload, claudeKey);
       else return json({ error: "no API key configured" }, 500, cors);
 
       const data = parseJudge(text);
@@ -54,9 +59,16 @@ export default {
   },
 };
 
-async function callGemini(env, userPayload) {
+async function resolveKey(v) {
+  if (!v) return null;
+  if (typeof v === "string") return v.trim() || null;
+  if (typeof v.get === "function") { try { return (await v.get()) || null; } catch { return null; } }
+  return null;
+}
+
+async function callGemini(env, userPayload, apiKey) {
   const model = env.GEMINI_MODEL || "gemini-2.0-flash";
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${env.GEMINI_API_KEY}`;
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
   const res = await fetch(url, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -71,13 +83,13 @@ async function callGemini(env, userPayload) {
   return j?.candidates?.[0]?.content?.parts?.[0]?.text || "";
 }
 
-async function callClaude(env, userPayload) {
+async function callClaude(env, userPayload, apiKey) {
   const model = env.CLAUDE_MODEL || "claude-haiku-4-5-20251001";
   const res = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
     headers: {
       "content-type": "application/json",
-      "x-api-key": env.ANTHROPIC_API_KEY,
+      "x-api-key": apiKey,
       "anthropic-version": "2023-06-01",
     },
     body: JSON.stringify({
