@@ -46,8 +46,8 @@ export default {
 
     try {
       let text;
-      if (geminiKey) text = await callGemini(env, userPayload, geminiKey);
-      else if (claudeKey) text = await callClaude(env, userPayload, claudeKey);
+      if (claudeKey) text = await callClaude(env, userPayload, claudeKey);
+      else if (geminiKey) text = await callGemini(env, userPayload, geminiKey);
       else return json({ error: "no API key configured" }, 500, cors);
 
       const data = parseJudge(text);
