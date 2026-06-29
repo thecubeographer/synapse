@@ -10,6 +10,8 @@
 const $ = (sel) => document.querySelector(sel);
 const $$ = (sel) => Array.from(document.querySelectorAll(sel));
 
+const SHOUT_DURATION = 30;  // seconds to shout the answer
+
 const state = {
   players: [],
   mode: null,
@@ -270,11 +272,16 @@ function shuffle(arr) {
   return a;
 }
 
+// shout mode uses each category's short-answer `shout` set; explain uses `questions`
+function currentSet(cat) {
+  return (state.mode === "shout" && Array.isArray(cat.shout) && cat.shout.length) ? cat.shout : cat.questions;
+}
+
 function startGame(catId) {
   state.catId = catId;
   state.players.forEach(p => p.score = 0);
   const cat = CATEGORIES.find(c => c.id === catId);
-  state.queue = shuffle(cat.questions.map((_, i) => i));
+  state.queue = shuffle(currentSet(cat).map((_, i) => i));
   state.qIndex = 0;
 
   const t = CATEGORY_THEME[catId] || {};
@@ -291,7 +298,7 @@ function nextQuestion() {
   cancelSpeak();
   if (state.qIndex >= state.queue.length) return endGame();
   const cat = CATEGORIES.find(c => c.id === state.catId);
-  state.current = cat.questions[state.queue[state.qIndex]];
+  state.current = currentSet(cat)[state.queue[state.qIndex]];
   state.transcripts = {};
   state.turn = 0;
 
@@ -308,55 +315,73 @@ function renderScoreStrip() {
   $("#score-strip").innerHTML = state.players.map(p => `<div class="sc"><span class="sc-n">${p.name}</span><span class="sc-v">${p.score}</span></div>`).join("");
 }
 
-/* ---- SHOUT ---- */
+/* ---- SHOUT ----
+ * Read the question aloud → start a timer + auto-listen → on a correct shout
+ * (or "Someone got it") stop and pick who said it → on timeout, reveal. */
 function setupShout() {
   $("#play-shout").style.display = "block";
   $("#play-explain").style.display = "none";
-  const live = $("#shout-live"); live.textContent = "";
-  const status = $("#shout-status");
-  status.textContent = speechSupported ? "Tap to listen, then shout" : "Mic unavailable — tap who got it";
-  $("#shout-mic").classList.remove("listening");
-  $("#shout-correct").classList.remove("show");
-  $("#shout-award").innerHTML = "";
-  $$("#play-shout button").forEach(b => b.disabled = false);
 
-  let listening = false, solved = false;
+  const dur = SHOUT_DURATION;
+  $("#shout-stage").innerHTML = `
+    <div class="turn-sub" id="shout-sub">Listen to the question…</div>
+    <div class="timer-ring">
+      <svg viewBox="0 0 120 120"><circle class="ring-bg" cx="60" cy="60" r="54"/><circle class="ring-fg" id="ring-fg" cx="60" cy="60" r="54"/></svg>
+      <div class="timer-num" id="timer-num">${dur}</div>
+    </div>
+    <div class="explain-live" id="shout-live"></div>
+    <div id="shout-controls" class="row" style="justify-content:center">
+      <button class="btn primary" id="shout-claim">Someone got it</button>
+      <button class="btn link" id="shout-nobody">Nobody</button>
+    </div>`;
 
-  $("#shout-mic").onclick = () => {
-    if (!speechSupported) return;
-    if (listening) {
-      listening = false; stopRecog();
-      $("#shout-mic").classList.remove("listening");
-      status.textContent = "Paused — tap to listen";
-      return;
-    }
-    listening = true; solved = false;
-    $("#shout-mic").classList.add("listening");
-    status.textContent = "Listening…";
-    startRecog((r) => {
-      live.textContent = r.text;
-      if (!solved && matchesAccept(r.text, state.current.accept)) {
-        solved = true; listening = false; stopRecog();
-        $("#shout-mic").classList.remove("listening");
-        onShoutCorrect();
-      }
-    }, { continuous: true, keepAlive: () => listening });
+  const num = $("#timer-num"), ring = $("#ring-fg"), live = $("#shout-live");
+  const circ = 2 * Math.PI * 54;
+  ring.style.strokeDasharray = circ; ring.style.strokeDashoffset = 0;
+  let left = dur, timer = null, listening = false, ended = false;
+
+  const stopAll = () => { ended = true; listening = false; clearInterval(timer); stopRecog(); };
+
+  const toAward = () => {
+    if (ended) return;
+    stopAll();
+    $("#shout-sub").textContent = "Correct! Who shouted it first?";
+    live.textContent = "";
+    $("#shout-controls").style.display = "none";
+    const wrap = document.createElement("div");
+    wrap.className = "award-grid";
+    state.players.forEach(p => {
+      const b = document.createElement("button");
+      b.className = "award-btn"; b.textContent = p.name;
+      b.onclick = () => { p.score += 1; renderScoreStrip(); revealShout(false, p.name); };
+      wrap.appendChild(b);
+    });
+    $("#shout-stage").appendChild(wrap);
   };
 
-  $("#shout-claim").onclick = () => onShoutCorrect();
-  $("#shout-nobody").onclick = () => { stopRecog(); revealShout(true); };
-}
+  const timeUp = () => { if (ended) return; stopAll(); revealShout(true); };
 
-function onShoutCorrect() {
-  $("#shout-correct").classList.add("show");
-  $("#shout-status").textContent = "Who shouted it first?";
-  const wrap = $("#shout-award"); wrap.innerHTML = "";
-  state.players.forEach(p => {
-    const b = document.createElement("button");
-    b.className = "award-btn"; b.textContent = p.name;
-    b.onclick = () => { stopRecog(); p.score += 1; renderScoreStrip(); revealShout(false, p.name); };
-    wrap.appendChild(b);
-  });
+  $("#shout-claim").onclick = toAward;
+  $("#shout-nobody").onclick = timeUp;
+
+  const beginListening = () => {
+    if (ended) return;
+    $("#shout-sub").textContent = speechSupported ? "Listening… shout the answer!" : "Shout it, then tap “Someone got it”";
+    if (speechSupported) {
+      listening = true;
+      startRecog((r) => {
+        live.textContent = r.text;
+        if (!ended && matchesAccept(r.text, state.current.accept)) toAward();
+      }, { continuous: true, keepAlive: () => listening && !ended });
+    }
+    timer = setInterval(() => {
+      left--; num.textContent = Math.max(left, 0);
+      ring.style.strokeDashoffset = circ * (1 - left / dur);
+      if (left <= 0) timeUp();
+    }, 1000);
+  };
+
+  speakThen(state.current.q, beginListening);
 }
 
 function revealShout(missed, winnerName) {

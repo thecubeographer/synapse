@@ -48,6 +48,16 @@ const CATEGORIES = [
         answer: "Write down or memorize the route as a sequence of turns and landmarks before leaving, note your final road's direction (N/S/E/W), keep track of major cross-streets, and don't be afraid to stop and ask. Paper maps still work.",
         key: ["map", "route", "landmarks", "turns", "write", "memorize", "direction", "cross", "streets", "ask", "signs", "paper"]
       }
+    ],
+    shout: [
+      { q: "What direction does a compass needle point?", accept: ["north", "northern", "true north", "magnetic north"], answer: "North" },
+      { q: "What is the international distress signal you shout for help?", accept: ["sos", "mayday", "s o s"], answer: "SOS" },
+      { q: "What do you call a fire you build to stay warm in the wild?", accept: ["campfire", "fire", "bonfire", "camp fire"], answer: "Campfire" },
+      { q: "What three things does the survival rule of three say you can't go long without (last one)?", accept: ["water", "h2o", "drinking water"], answer: "Water" },
+      { q: "What color flag or cloth means surrender or peace?", accept: ["white", "white flag"], answer: "White" },
+      { q: "What knot is the most famous all-purpose loop knot?", accept: ["bowline", "bow line"], answer: "Bowline" },
+      { q: "What North Star name do you follow at night?", accept: ["polaris", "north star", "pole star"], answer: "Polaris" },
+      { q: "What do you call edible plants and berries you gather in the wild?", accept: ["foraging", "forage", "foraged"], answer: "Foraging" }
     ]
   },
   {
@@ -92,6 +102,16 @@ const CATEGORIES = [
         answer: "Try a plunger first, then a drain snake/auger to physically pull the clog. Baking soda + vinegar followed by hot (not boiling, for PVC) water can break up gunk. Chemical drain cleaners can damage pipes and rarely fix hair clogs.",
         key: ["plunger", "snake", "auger", "clog", "baking", "soda", "vinegar", "hot", "water", "pipes", "chemical", "hair"]
       }
+    ],
+    shout: [
+      { q: "What tool do you use to drive a nail into wood?", accept: ["hammer", "claw hammer"], answer: "Hammer" },
+      { q: "What tool turns a screw?", accept: ["screwdriver", "screw driver", "driver"], answer: "Screwdriver" },
+      { q: "What do you call the wood beam inside a wall you screw heavy things into?", accept: ["stud", "wall stud", "studs"], answer: "Stud" },
+      { q: "Righty tighty, lefty what?", accept: ["loosey", "loose", "lefty loosey"], answer: "Loosey" },
+      { q: "What sticky strip fixes a leaky duct or quick repair?", accept: ["duct tape", "duct", "tape"], answer: "Duct Tape" },
+      { q: "What tool measures length in feet and inches and rolls back up?", accept: ["tape measure", "measuring tape", "tape"], answer: "Tape Measure" },
+      { q: "What flips off to cut power to a circuit in your electrical panel?", accept: ["breaker", "circuit breaker", "breakers"], answer: "Breaker" },
+      { q: "What do you call the slippery stuff you use to stop a squeaky hinge?", accept: ["oil", "lubricant", "lube", "wd40", "wd-40"], answer: "Oil" }
     ]
   },
   {
@@ -136,6 +156,16 @@ const CATEGORIES = [
         answer: "Move money to savings/investments automatically the moment you're paid — BEFORE spending on anything else — then live on what's left. It flips the usual order so saving isn't the leftover that never happens.",
         key: ["save", "savings", "investments", "automatic", "paid", "before", "spending", "live", "left", "leftover", "first", "invest"]
       }
+    ],
+    shout: [
+      { q: "What does APR stand for?", accept: ["annual percentage rate", "annual", "percentage rate", "apr"], answer: "Annual Percentage Rate" },
+      { q: "What's the three-digit number that rates your borrowing trustworthiness?", accept: ["credit score", "credit", "fico", "score"], answer: "Credit Score" },
+      { q: "What do you call money you owe?", accept: ["debt", "debts", "owe", "owed"], answer: "Debt" },
+      { q: "Money a bank pays you for keeping savings there is called what?", accept: ["interest", "interest rate"], answer: "Interest" },
+      { q: "A spending plan for your money is called a what?", accept: ["budget", "budgeting"], answer: "Budget" },
+      { q: "Rising prices over time that shrink your money's value is called what?", accept: ["inflation", "inflate"], answer: "Inflation" },
+      { q: "What's the retirement account many jobs offer, named after a tax code?", accept: ["401k", "401 k", "four oh one k", "401(k)"], answer: "401(k)" },
+      { q: "Money set aside to cover surprise expenses is your emergency what?", accept: ["fund", "emergency fund", "savings", "funds"], answer: "Fund" }
     ]
   },
   {
@@ -180,6 +210,16 @@ const CATEGORIES = [
         answer: "Red flags: trouble breathing, chest pain, confusion or trouble waking, stiff neck with fever, blue lips, or a fever that's very high or won't break. Those mean get emergency care — don't sleep it off.",
         key: ["breathing", "chest", "pain", "confusion", "waking", "stiff", "neck", "fever", "blue", "lips", "high", "emergency"]
       }
+    ],
+    shout: [
+      { q: "How many chambers are in the human heart?", accept: ["4", "four"], answer: "4 (four)" },
+      { q: "What's the emergency number to call in the US?", accept: ["911", "nine one one", "9 1 1"], answer: "911" },
+      { q: "What organ pumps blood through your body?", accept: ["heart"], answer: "Heart" },
+      { q: "What red liquid carries oxygen through your veins?", accept: ["blood"], answer: "Blood" },
+      { q: "What's the largest organ of the human body?", accept: ["skin"], answer: "Skin" },
+      { q: "What lifesaving chest-pumping technique do you do when someone's heart stops?", accept: ["cpr", "c p r", "compressions"], answer: "CPR" },
+      { q: "What's the bony cage that protects your heart and lungs?", accept: ["rib cage", "ribcage", "ribs", "rib"], answer: "Rib Cage" },
+      { q: "How many bones are in the adult human body?", accept: ["206", "two hundred six", "two oh six"], answer: "206" }
     ]
   },
   {
@@ -224,6 +264,16 @@ const CATEGORIES = [
         answer: "Common method: ~2 parts water to 1 part white rice, bring to a boil, drop to low, cover with a lid, simmer ~15–18 min, then rest off heat 5 min without lifting the lid. Don't stir it constantly.",
         key: ["two", "parts", "water", "one", "rice", "ratio", "boil", "low", "cover", "lid", "simmer", "rest", "stir"]
       }
+    ],
+    shout: [
+      { q: "What temperature does water boil at, in Fahrenheit?", accept: ["212", "two twelve", "two hundred twelve"], answer: "212" },
+      { q: "What temperature does water freeze at, in Fahrenheit?", accept: ["32", "thirty two"], answer: "32" },
+      { q: "What white seasoning is the most common, paired with pepper?", accept: ["salt"], answer: "Salt" },
+      { q: "How many teaspoons are in a tablespoon?", accept: ["3", "three"], answer: "3 (three)" },
+      { q: "What leavening agent makes bread rise?", accept: ["yeast"], answer: "Yeast" },
+      { q: "What do you call cooking food in a pan with a little hot oil over high heat?", accept: ["sauté", "saute", "frying", "fry", "sauteing"], answer: "Sauté" },
+      { q: "What dairy product do you churn to make butter?", accept: ["cream", "milk", "heavy cream"], answer: "Cream" },
+      { q: "What kitchen appliance keeps food cold to stop it spoiling?", accept: ["refrigerator", "fridge", "refrigerate"], answer: "Refrigerator" }
     ]
   },
   {
@@ -268,6 +318,16 @@ const CATEGORIES = [
         answer: "Trust the gut that says it's off. Urgency + a sympathetic story + a money ask is a classic setup. You can be kind without being a mark: offer non-cash help, verify the story, or simply say no and walk away. Real emergencies survive a pause.",
         key: ["trust", "gut", "urgency", "sympathetic", "story", "money", "setup", "non", "cash", "verify", "say", "no", "walk", "away", "pause"]
       }
+    ],
+    shout: [
+      { q: "A fake email trying to steal your password is called what?", accept: ["phishing", "phish"], answer: "Phishing" },
+      { q: "What color traffic light means stop?", accept: ["red"], answer: "Red" },
+      { q: "What do you dial in the US for an emergency?", accept: ["911", "nine one one", "9 1 1"], answer: "911" },
+      { q: "If a deal sounds too good to be true, it probably is a what?", accept: ["scam", "fraud", "fake"], answer: "Scam" },
+      { q: "What gas alarm should every home have, for the silent killer?", accept: ["carbon monoxide", "carbon", "monoxide", "co"], answer: "Carbon Monoxide" },
+      { q: "Which way do you look first before crossing a US street?", accept: ["left"], answer: "Left" },
+      { q: "What word means giving clear permission before someone shares your info?", accept: ["consent", "permission"], answer: "Consent" },
+      { q: "What's the safe device to put out a small kitchen or office fire?", accept: ["extinguisher", "fire extinguisher"], answer: "Extinguisher" }
     ]
   },
   {
@@ -336,6 +396,16 @@ const CATEGORIES = [
         answer: "Mathematically best is the 'avalanche': pay minimums on all, then throw extra at the highest-APR card first — it costs you the least interest overall. The 'snowball' (smallest balance first) is worse on paper but gives quick wins for motivation. Either way: stop adding new charges and always pay more than the minimum.",
         key: ["avalanche", "minimums", "extra", "highest", "apr", "interest", "least", "snowball", "smallest", "balance", "motivation", "minimum", "charges"]
       }
+    ],
+    shout: [
+      { q: "What yearly document do you file with the IRS by April?", accept: ["taxes", "tax return", "tax", "return"], answer: "Tax Return" },
+      { q: "What's the legal document that says who gets your stuff when you die?", accept: ["will", "last will", "testament"], answer: "Will" },
+      { q: "What monthly payment do you make to rent a place to live?", accept: ["rent"], answer: "Rent" },
+      { q: "What's a loan to buy a house called?", accept: ["mortgage"], answer: "Mortgage" },
+      { q: "What insurance is legally required to drive a car?", accept: ["auto", "car insurance", "auto insurance", "liability"], answer: "Auto Insurance" },
+      { q: "What signed agreement legally binds two parties to terms?", accept: ["contract", "agreement"], answer: "Contract" },
+      { q: "Money you owe each month minimum on a card builds what if unpaid?", accept: ["interest", "debt"], answer: "Interest" },
+      { q: "What document proves your income to a landlord, often a recent pay what?", accept: ["pay stub", "paystub", "stub"], answer: "Pay Stub" }
     ]
   },
   {
@@ -354,6 +424,16 @@ const CATEGORIES = [
       { q: "On which continent is the Sahara Desert?", accept: ["africa", "african"], answer: "Africa — the Sahara stretches across most of North Africa.", key: ["africa", "continent", "sahara", "desert", "north", "northern", "stretches", "largest"] },
       { q: "What is the tallest mountain on Earth above sea level?", accept: ["everest", "mount everest", "mt everest"], answer: "Mount Everest, ~29,032 ft, on the Nepal–Tibet border.", key: ["everest", "mount", "tallest", "mountain", "29032", "feet", "nepal", "tibet", "border", "sea", "level"] },
       { q: "The Great Barrier Reef lies off the coast of which country?", accept: ["australia", "australian"], answer: "Australia — off the northeast coast of Queensland; it's the largest living structure on Earth.", key: ["australia", "great", "barrier", "reef", "northeast", "coast", "queensland", "largest", "living", "structure"] }
+    ],
+    shout: [
+      { q: "What is the capital of France?", accept: ["paris"], answer: "Paris" },
+      { q: "What is the capital of Japan?", accept: ["tokyo"], answer: "Tokyo" },
+      { q: "What is the longest river in the world?", accept: ["nile", "amazon"], answer: "Nile" },
+      { q: "How many continents are there?", accept: ["7", "seven"], answer: "7 (seven)" },
+      { q: "What is the capital of the United States?", accept: ["washington", "washington dc", "d c", "dc"], answer: "Washington DC" },
+      { q: "What is the capital of Italy?", accept: ["rome"], answer: "Rome" },
+      { q: "What's the largest hot, sandy desert in the world?", accept: ["sahara"], answer: "Sahara" },
+      { q: "What is the capital of England?", accept: ["london"], answer: "London" }
     ]
   },
   {
@@ -372,6 +452,16 @@ const CATEGORIES = [
       { q: "What are the first ten amendments to the Constitution collectively called?", accept: ["bill of rights", "bill"], answer: "The Bill of Rights — the first 10 amendments, protecting core individual freedoms.", key: ["bill", "rights", "first", "ten", "10", "amendments", "constitution", "individual", "freedoms"] },
       { q: "How long is the term for a member of the U.S. House of Representatives?", accept: ["two", "2", "two years"], answer: "2 years — the entire House is up for election every two years.", key: ["two", "2", "years", "term", "house", "representatives", "election", "every"] },
       { q: "What does it mean to 'veto' a bill, and who can override it?", accept: ["reject", "president", "override", "two thirds", "congress", "veto"], answer: "A veto is the President rejecting a bill instead of signing it into law. Congress can override the veto with a two-thirds vote in both the House and Senate.", key: ["veto", "president", "reject", "bill", "signing", "law", "congress", "override", "two", "thirds", "vote", "house", "senate"] }
+    ],
+    shout: [
+      { q: "How many U.S. senators does each state get?", accept: ["2", "two"], answer: "2 (two)" },
+      { q: "How many justices sit on the U.S. Supreme Court?", accept: ["9", "nine"], answer: "9 (nine)" },
+      { q: "How many years is a U.S. presidential term?", accept: ["4", "four"], answer: "4 (four)" },
+      { q: "Which branch of government makes the laws?", accept: ["legislative", "congress"], answer: "Legislative" },
+      { q: "The first ten amendments are called the Bill of what?", accept: ["rights", "bill of rights"], answer: "Rights" },
+      { q: "What's the minimum age to be elected U.S. President?", accept: ["35", "thirty five"], answer: "35" },
+      { q: "What do we call the right to vote?", accept: ["suffrage", "vote", "voting"], answer: "Suffrage" },
+      { q: "How many stars are on the U.S. flag?", accept: ["50", "fifty"], answer: "50 (fifty)" }
     ]
   },
   {
@@ -390,6 +480,16 @@ const CATEGORIES = [
       { q: "Roughly how many bones are in the adult human body?", accept: ["206", "two hundred", "two oh six", "two hundred six"], answer: "206 bones (babies are born with about 270, which fuse together over time).", key: ["206", "bones", "adult", "human", "body", "babies", "270", "fuse"] },
       { q: "What is the largest planet in our solar system?", accept: ["jupiter"], answer: "Jupiter — a gas giant more massive than all the other planets combined.", key: ["jupiter", "largest", "planet", "solar", "system", "gas", "giant", "massive", "combined"] },
       { q: "In what year did World War II end?", accept: ["1945", "forty five", "nineteen forty five"], answer: "1945 — Germany surrendered in May, Japan in August/September.", key: ["1945", "world", "war", "end", "germany", "surrendered", "may", "japan", "august", "september"] }
+    ],
+    shout: [
+      { q: "What's the chemical symbol for water?", accept: ["h2o", "h 2 o"], answer: "H2O" },
+      { q: "What is 7 times 8?", accept: ["56", "fifty six"], answer: "56" },
+      { q: "What planet do we live on?", accept: ["earth"], answer: "Earth" },
+      { q: "What is the closest star to Earth?", accept: ["sun", "the sun"], answer: "Sun" },
+      { q: "What gas do humans need to breathe to survive?", accept: ["oxygen", "o2"], answer: "Oxygen" },
+      { q: "Who developed the theory of relativity?", accept: ["einstein", "albert einstein"], answer: "Einstein" },
+      { q: "What is the square root of 64?", accept: ["8", "eight"], answer: "8 (eight)" },
+      { q: "What's the hardest natural substance on Earth?", accept: ["diamond", "diamonds"], answer: "Diamond" }
     ]
   }
 ];
