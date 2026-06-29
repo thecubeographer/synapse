@@ -11,6 +11,7 @@ const $ = (sel) => document.querySelector(sel);
 const $$ = (sel) => Array.from(document.querySelectorAll(sel));
 
 const SHOUT_DURATION = 30;  // seconds to shout the answer
+const ROUND_LENGTH = 10;    // questions per round (drawn at random from the pool)
 
 const state = {
   players: [],
@@ -281,7 +282,9 @@ function startGame(catId) {
   state.catId = catId;
   state.players.forEach(p => p.score = 0);
   const cat = CATEGORIES.find(c => c.id === catId);
-  state.queue = shuffle(currentSet(cat).map((_, i) => i));
+  const pool = currentSet(cat);
+  // scramble the whole pool, then take a round's worth — different subset each game
+  state.queue = shuffle(pool.map((_, i) => i)).slice(0, Math.min(ROUND_LENGTH, pool.length));
   state.qIndex = 0;
 
   const t = CATEGORY_THEME[catId] || {};
